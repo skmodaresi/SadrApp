@@ -1,0 +1,35 @@
+<Window x:Class="SadrApp.Views.Controls.FieldEditorWindow"
+        Icon="pack://application:,,,/Assets/app.ico"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ویرایشگر" Height="640" Width="820" MinHeight="420" MinWidth="640"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F5FA"
+        ResizeMode="CanResize">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock x:Name="HeaderTitle" Grid.Row="0" Text="عنوان" Style="{StaticResource H1}" Margin="0,0,0,12"/>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <Border Style="{StaticResource SectionCard}">
+        <Grid x:Name="FieldsPanel">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+        </Grid>
+      </Border>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,12,0,0">
+      <Button x:Name="BtnSave" Content="💾 ذخیره" Style="{StaticResource PrimaryBtn}" MinWidth="110" Margin="0,0,8,0"/>
+      <Button x:Name="BtnCancel" Content="انصراف" Style="{StaticResource GhostBtn}" IsCancel="True"/>
+    </StackPanel>
+  </Grid>
+</Window>

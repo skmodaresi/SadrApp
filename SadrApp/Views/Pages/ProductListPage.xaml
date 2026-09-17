@@ -1,0 +1,21 @@
+<UserControl x:Class="SadrApp.Views.Pages.ProductListPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SadrApp.Views.Controls">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <TextBlock x:Name="PageTitle" Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10"/>
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <Button x:Name="BtnExtraCats" Content="🗂 دسته‌های تکمیلی کالا" Style="{StaticResource GhostBtn}" Margin="0,0,6,0"/>
+        <Button x:Name="BtnAttribs" Content="🧩 ویژگی‌های کالا" Style="{StaticResource GhostBtn}" Margin="0,0,6,0"/>
+        <Button x:Name="BtnPrices" Content="💰 قیمت‌گذاری" Style="{StaticResource GhostBtn}"/>
+      </StackPanel>
+    </Border>
+    <controls:ListTableControl x:Name="ListCtl" Grid.Row="2"/>
+  </Grid>
+</UserControl>

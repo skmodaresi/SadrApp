@@ -1,0 +1,83 @@
+<UserControl x:Class="SadrApp.Views.Controls.PersianDatePicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FlowDirection="RightToLeft">
+  <UserControl.Resources>
+    <Style x:Key="DayBtn" TargetType="Button">
+      <Setter Property="Width" Value="36"/>
+      <Setter Property="Height" Value="30"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Foreground" Value="#22314F"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#EDF3FF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="NavBtn" TargetType="Button" BasedOn="{StaticResource GhostBtn}">
+      <Setter Property="Width" Value="28"/>
+      <Setter Property="Height" Value="26"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="#1F3A5F"/>
+    </Style>
+  </UserControl.Resources>
+
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <TextBox x:Name="TextBox" Grid.Column="0" Style="{StaticResource Input}" VerticalContentAlignment="Center"/>
+    <Button x:Name="BtnCalendar" Grid.Column="1" Content="📅" Style="{StaticResource GhostBtn}" Margin="4,0,0,0" Padding="8,4" ToolTip="تقویم شمسی"/>
+
+    <Popup x:Name="Popup" PlacementTarget="{Binding ElementName=BtnCalendar}" Placement="Bottom"
+           StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+      <Border Background="White" CornerRadius="8" BorderBrush="#D9E1EF" BorderThickness="1" Padding="10" Margin="0,4,8,8">
+        <Border.Effect>
+          <DropShadowEffect BlurRadius="12" ShadowDepth="1" Opacity="0.25" Direction="270"/>
+        </Border.Effect>
+        <StackPanel>
+          <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnPrevYear"  Grid.Column="0" Content="«" Style="{StaticResource NavBtn}" Margin="0,0,4,0" ToolTip="سال قبل"/>
+            <Button x:Name="BtnPrevMonth" Grid.Column="1" Content="‹" Style="{StaticResource NavBtn}" ToolTip="ماه قبل"/>
+            <TextBlock x:Name="TitleText" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontWeight="Bold" FontSize="14" Foreground="#1F3A5F" Margin="6,0"/>
+            <Button x:Name="BtnNextMonth" Grid.Column="3" Content="›" Style="{StaticResource NavBtn}" ToolTip="ماه بعد"/>
+            <Button x:Name="BtnNextYear"  Grid.Column="4" Content="»" Style="{StaticResource NavBtn}" Margin="4,0,0,0" ToolTip="سال بعد"/>
+          </Grid>
+          <UniformGrid Columns="7" Margin="0,0,0,2">
+            <TextBlock Text="ش" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="ی" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="د" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="س" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="چ" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="پ" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+            <TextBlock Text="ج" HorizontalAlignment="Center" Foreground="#8A94A8" FontSize="11" Width="36" TextAlignment="Center"/>
+          </UniformGrid>
+          <UniformGrid x:Name="DaysGrid" Columns="7"/>
+        </StackPanel>
+      </Border>
+    </Popup>
+  </Grid>
+</UserControl>

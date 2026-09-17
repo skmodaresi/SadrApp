@@ -1,0 +1,46 @@
+<Window x:Class="SadrApp.Views.PrintSettingsWindow"
+        Icon="pack://application:,,,/Assets/app.ico"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="تنظیمات چاپ فاکتور" Height="600" Width="880"
+        FlowDirection="RightToLeft" WindowStartupLocation="CenterOwner"
+        Background="#F3F5FA">
+  <Grid Margin="14">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Text="تنظیمات چاپ فاکتور" Style="{StaticResource H1}" Margin="0,0,0,10"/>
+
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <Button x:Name="BtnAdd" Content="➕ جدید" Style="{StaticResource PrimaryBtn}" Margin="0,0,6,0"/>
+        <Button x:Name="BtnEdit" Content="✏️ ویرایش" Style="{StaticResource GhostBtn}" Margin="0,0,6,0"/>
+        <Button x:Name="BtnDelete" Content="🗑 حذف" Style="{StaticResource DangerBtn}" Margin="0,0,6,0"/>
+        <Button x:Name="BtnSetDefault" Content="⭐ پیش‌فرض" Style="{StaticResource GhostBtn}" ToolTip="این چیدمان هنگام چاپ به‌صورت پیش‌فرض انتخاب می‌شود"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="4">
+      <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                SelectionMode="Single" GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                BorderThickness="0" RowHeight="34" FontSize="13">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="نام" Binding="{Binding Name}" Width="170"/>
+          <DataGridTextColumn Header="چیدمان" Binding="{Binding LayoutLabel}" Width="130"/>
+          <DataGridTextColumn Header="عنوان سفارشی" Binding="{Binding TitleLabel}" Width="*"/>
+          <DataGridTextColumn Header="یادداشت پایین صفحه" Binding="{Binding FooterLabel}" Width="*"/>
+          <DataGridTextColumn Header="ستون تخفیف" Binding="{Binding DiscountLabel}" Width="100"/>
+          <DataGridTextColumn Header="لوگو" Binding="{Binding LogoLabel}" Width="70"/>
+          <DataGridTextColumn Header="پیش‌فرض" Binding="{Binding DefaultLabel}" Width="80"/>
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+
+    <TextBlock Grid.Row="3" x:Name="HintText" Foreground="#8A94A8" FontSize="11" Margin="0,8,0,0"
+               Text="چیدمان‌ها در پایگاه داده ذخیره می‌شوند و هنگام چاپ در پیش‌نمایش قابل انتخاب هستند."/>
+  </Grid>
+</Window>

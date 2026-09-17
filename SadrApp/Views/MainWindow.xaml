@@ -1,0 +1,75 @@
+<Window x:Class="SadrApp.Views.MainWindow"
+        Icon="pack://application:,,,/Assets/app.ico"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="سامانه حسابداری و مدیریت پروژه - صدر" Height="720" Width="1180"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F5FA">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="14,10">
+      <DockPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+          <TextBlock Text="🏭" FontSize="20" Margin="0,0,8,0"/>
+          <TextBlock Text="سامانه حسابداری و مدیریت پروژه — صدر"
+                     Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+        </StackPanel>
+        <TextBlock x:Name="VersionText" DockPanel.Dock="Left" Foreground="#A9BFEA" FontSize="11"
+                   VerticalAlignment="Center" HorizontalAlignment="Left" Text="نسخه ۰.۱ — فاز ۱"/>
+      </DockPanel>
+    </Border>
+
+    <Menu DockPanel.Dock="Top" Background="White" FontSize="13" Padding="6,4">
+      <MenuItem Header="🧾 فاکتورها">
+        <MenuItem Header="📄 پیش‌فاکتورها" x:Name="MnuPreInvoices"/>
+        <MenuItem Header="🧾 فاکتورهای فروش" x:Name="MnuSellInvoices"/>
+        <MenuItem Header="🛒 فاکتورهای خرید" x:Name="MnuBuyInvoices"/>
+        <MenuItem Header="📋 همه فاکتورها" x:Name="MnuAllInvoices"/>
+      </MenuItem>
+      <MenuItem Header="📊 حسابداری">
+        <MenuItem Header="🧩 گروه‌های حساب" x:Name="MnuAccountGroups"/>
+        <MenuItem Header="📚 حساب‌های کل" x:Name="MnuGeneralAccounts"/>
+        <MenuItem Header="📗 حساب‌های معین" x:Name="MnuSubSidiaryAccounts"/>
+        <MenuItem Header="📄 حساب‌های تفصیلی" x:Name="MnuDetailAccounts"/>
+      </MenuItem>
+      <MenuItem Header="💼 پرونده‌ها">
+        <MenuItem Header="🗂 دسته‌بندی کالا" x:Name="MnuProductCategories"/>
+        <MenuItem Header="📦 کالاها" x:Name="MnuProducts"/>
+        <MenuItem Header="🏷 برندها" x:Name="MnuBrands"/>
+        <MenuItem Header="📏 واحدهای شمارش" x:Name="MnuUnits"/>
+        <MenuItem Header="🏷️ ویژگی‌های کالا" x:Name="MnuAttributes"/>
+        <Separator/>
+        <MenuItem Header="📁 دسته‌بندی پروژه" x:Name="MnuProjectCategories"/>
+        <MenuItem Header="📈 پروژه‌ها" x:Name="MnuProjects"/>
+        <MenuItem Header="📋 وظایف پروژه‌ها" x:Name="MnuTasks"/>
+        <Separator/>
+        <MenuItem Header="👥 اشخاص" x:Name="MnuPeople"/>
+        <MenuItem Header="🏢 شرکت‌ها" x:Name="MnuCompanies"/>
+        <MenuItem Header="🤝 مشتریان و تأمین‌کنندگان" x:Name="MnuCustomersProviders"/>
+        <MenuItem Header="👤 کاربران برنامه" x:Name="MnuUsers"/>
+        <Separator/>
+        <MenuItem Header="🏦 بانک‌ها" x:Name="MnuBanks"/>
+        <MenuItem Header="🏛 شعب بانک‌ها" x:Name="MnuBankBranches"/>
+        <MenuItem Header="🏬 انبارها" x:Name="MnuWarehouses"/>
+        <Separator/>
+        <MenuItem Header="💱 واحدهای پول" x:Name="MnuCurrencies"/>
+        <MenuItem Header="🛡 نقش‌ها" x:Name="MnuRoles"/>
+      </MenuItem>
+      <MenuItem Header="⚙️ سیستم">
+        <MenuItem Header="🔌 تنظیمات اتصال به پایگاه داده" x:Name="MnuConnection"/>
+        <MenuItem Header="🖨 تنظیمات چاپ فاکتور" x:Name="MnuPrintSettings"/>
+        <Separator/>
+        <MenuItem Header="↩️ خروج" x:Name="MnuExit"/>
+      </MenuItem>
+    </Menu>
+
+    <Border DockPanel.Dock="Bottom" Background="#E8EDF6" Padding="12,6">
+      <DockPanel>
+        <TextBlock x:Name="StatusText" DockPanel.Dock="Right" Foreground="#44506B" FontSize="12" Text="آماده"/>
+        <TextBlock x:Name="ConnText" DockPanel.Dock="Left" Foreground="#8A94A8" FontSize="11" HorizontalAlignment="Left"/>
+      </DockPanel>
+    </Border>
+
+    <TabControl x:Name="Tabs" Background="Transparent" BorderThickness="0" Margin="8"/>
+  </DockPanel>
+</Window>

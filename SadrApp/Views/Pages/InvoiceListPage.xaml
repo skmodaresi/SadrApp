@@ -1,0 +1,20 @@
+<UserControl x:Class="SadrApp.Views.Pages.InvoiceListPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SadrApp.Views.Controls">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <TextBlock x:Name="PageTitle" Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10" Text="فاکتورها"/>
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="نوع فاکتور:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#44506B"/>
+        <ComboBox x:Name="TypeFilter" Width="180" Style="{StaticResource Combo}"/>
+      </StackPanel>
+    </Border>
+    <controls:ListTableControl x:Name="ListCtl" Grid.Row="2"/>
+  </Grid>
+</UserControl>

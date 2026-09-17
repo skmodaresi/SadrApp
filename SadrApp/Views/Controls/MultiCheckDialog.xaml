@@ -1,0 +1,26 @@
+<Window x:Class="SadrApp.Views.Controls.MultiCheckDialog"
+        Icon="pack://application:,,,/Assets/app.ico"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="انتخاب چندگانه" Height="480" Width="420"
+        FlowDirection="RightToLeft"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F5FA" ResizeMode="NoResize">
+  <Grid Margin="14">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <TextBlock x:Name="HeaderTitle" Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10"/>
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="8">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="Items"/>
+      </ScrollViewer>
+    </Border>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
+      <Button x:Name="BtnOk" Content="تأیید" Style="{StaticResource PrimaryBtn}" MinWidth="90" Margin="0,0,8,0"/>
+      <Button Content="انصراف" Style="{StaticResource GhostBtn}" IsCancel="True"/>
+    </StackPanel>
+  </Grid>
+</Window>

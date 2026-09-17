@@ -1,0 +1,33 @@
+<Window x:Class="SadrApp.Views.Controls.InvoicePrintPreviewWindow"
+        Icon="pack://application:,,,/Assets/app.ico"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="پیش‌نمایش چاپ فاکتور" Height="820" Width="760" MinHeight="500" MinWidth="520"
+        FlowDirection="RightToLeft" WindowStartupLocation="CenterOwner" Background="#E7EBF4">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <Border Grid.Row="0" Background="White" Padding="10" Margin="8,8,8,0" CornerRadius="8">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock x:Name="LblTitle" Text="پیش‌نمایش چاپ" Style="{StaticResource H2}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+        <TextBlock Text="چیدمان:" VerticalAlignment="Center" Margin="0,0,4,0" Foreground="#44506B" FontSize="12"/>
+        <ComboBox x:Name="CmbLayout" Width="170" VerticalAlignment="Center" FontSize="12"/>
+        <Button x:Name="BtnSavePdf" Content="💾 ذخیره PDF" Style="{StaticResource PrimaryBtn}" MinWidth="110" Margin="14,0,0,0"/>
+        <Button x:Name="BtnPrint" Content="🖨 چاپ" Style="{StaticResource GhostBtn}" MinWidth="80" Margin="8,0,0,0"/>
+        <TextBlock Text="بزرگ‌نمایی:" VerticalAlignment="Center" Margin="16,0,6,0" Foreground="#44506B" FontSize="12"/>
+        <Slider x:Name="ZoomSlider" Width="120" Minimum="0.4" Maximum="2.2" Value="1"
+                VerticalAlignment="Center" TickFrequency="0.2" IsSnapToTickEnabled="False"/>
+        <TextBlock x:Name="LblZoom" Text="۱۰۰٪" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#44506B" FontSize="12" Width="44"/>
+        <Button x:Name="BtnClose" Content="بستن" Style="{StaticResource GhostBtn}" MinWidth="70" Margin="16,0,0,0"/>
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" Margin="8,8,8,8" Background="#C9D2E3"
+                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+      <Image x:Name="PreviewImage" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="12"/>
+    </ScrollViewer>
+  </Grid>
+</Window>

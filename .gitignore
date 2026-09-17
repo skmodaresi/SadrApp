@@ -1,0 +1,18 @@
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Dd]ist/
+*.user
+.vs/
+.freebuff/
+
+# Offline installer redistributables (re-fetched by build-installer.ps1)
+installer/redist/
+
+# Per-machine runtime config and logs (may contain server credentials)
+Connection.dat
+setup.log
+
+# UI test-run outputs
+ui-shots/
+ui-test-invoice*.pdf
