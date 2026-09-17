@@ -4,6 +4,23 @@ Accounting & project-management desktop application for Windows (Persian / RTL U
 
 WPF on .NET 10, SQL Server (LocalDB or full) via Entity Framework Core, QuestPDF for invoice printing.
 
+## Download (for testers)
+
+Grab the ready-to-run offline installer from the
+[**v1.0.0 release page**](https://github.com/skmodaresi/SadrApp/releases/download/v1.0.0/SadrApp-Setup-1.0.zip)
+or browse all releases on the [Releases](https://github.com/skmodaresi/SadrApp/releases) page.
+
+The zip contains the full offline setup — .NET 10 runtime and SQL Server 2022 LocalDB installers
+included, no internet or preinstalled SQL Server needed:
+
+1. Unzip anywhere.
+2. Run `SadrSetup.exe` (accept the administrator prompt).
+3. Pick the install folder and click شروع نصب — prerequisites, database, and shortcut are set up automatically.
+4. On first launch, choose the main admin username/password, then log in.
+
+Prerequisite: Microsoft Visual C++ Redistributable (required by LocalDB) — included in recent
+Windows 11, otherwise install it from Microsoft.
+
 ## Features
 
 - Projects and tasks with same-project prerequisites, task reports, and progress tracking
@@ -28,7 +45,11 @@ The wizard installs missing prerequisites silently, creates/starts the LocalDB i
 creates the database, writes `Connection.dat` beside the app, and adds a Start-Menu shortcut.
 On first launch the app creates its schema and asks for the main admin username/password.
 
-Zip `dist/SadrApp-Setup/` and share it — no internet or preinstalled SQL Server needed.
+To publish a new tester release, zip `dist/SadrApp-Setup/` and run:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts/make-release.ps1 -Zip dist/SadrApp-Setup-<ver>.zip -Tag v<ver> -Title "SadrApp <ver>"
+```
 
 ## Building from source
 
