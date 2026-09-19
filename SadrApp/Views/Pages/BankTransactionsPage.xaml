@@ -1,0 +1,27 @@
+<UserControl x:Class="SadrApp.Views.Pages.BankTransactionsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SadrApp.Views.Controls">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <TextBlock x:Name="PageTitle" Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10" Text="دفتر تراکنش‌های بانکی"/>
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <DockPanel LastChildFill="False">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="حساب بانکی:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#44506B"/>
+          <ComboBox x:Name="AccountFilter" Width="240" Style="{StaticResource Combo}"/>
+          <Button x:Name="BtnRecalc" Content="♻️ بازمحاسبه موجودی" Style="{StaticResource GhostBtn}" Margin="16,0,0,0"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+          <TextBlock Text="موجودی فعلی:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#44506B"/>
+          <TextBlock x:Name="TxtBalance" VerticalAlignment="Center" Style="{StaticResource H2}" Text="—"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+    <controls:ListTableControl x:Name="ListCtl" Grid.Row="2"/>
+  </Grid>
+</UserControl>

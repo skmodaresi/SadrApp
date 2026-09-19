@@ -18,7 +18,10 @@ public partial class BankPage : UserControl
         ListCtl.RefreshClicked += (_, _) => { LoadBanks(); Load(); };
         ListCtl.RowDoubleClicked += (_, _) => Edit();
         BankFilter.SelectionChanged += (_, _) => Load();
-        BtnAccounts.Click += (_, _) => ManageAccounts();
+        BtnAccounts.Click += (_, _) =>
+        {
+            if (Window.GetWindow(this) is MainWindow main) main.OpenBankAccounts();
+        };
         Loaded += (_, _) => { LoadBanks(); Load(); };
     }
 
@@ -140,48 +143,6 @@ public partial class BankPage : UserControl
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "خطا در حذف", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private async void ManageAccounts()
-    {
-        try
-        {
-            await using var db = SadrDb.New();
-            var branches = await db.BankBranches.Where(b => !b.Deleted)
-                .Select(b => new { b.Id, Name = b.Bank!.Name + " - " + b.Name }).ToListAsync();
-            if (branches.Count == 0)
-            {
-                Info("ابتدا یک شعبه بانک تعریف کنید.");
-                return;
-            }
-            var branchChoices = branches.Select(b => new KeyValuePair<int, string>(b.Id, b.Name)).ToList();
-            var curChoices = await db.Currencies.Where(c => !c.Deleted)
-                .Select(c => new KeyValuePair<int, string>(c.Id, c.Name)).ToListAsync();
-            var companies = await db.Companies.Where(c => !c.Deleted)
-                .Select(c => new KeyValuePair<int, string>(c.Id, c.FullName)).ToListAsync();
-            var people = await db.People.Where(p => !p.Deleted)
-                .Select(p => new { p.Id, Name = p.FirstName + " " + p.LastName }).ToListAsync();
-
-            var accounts = await db.BankAccounts.Where(a => !a.Deleted)
-                .Select(a => new
-                {
-                    a.Id, a.Name, a.AccountNumber, a.BankBranchId,
-                    Currency = a.Currency.Name,
-                    Owner = a.PersonId != null ? a.Person.FirstName + " " + a.Person.LastName
-                          : a.CompanyId != null ? a.Company.FullName : "-"
-                }).ToListAsync();
-
-            var listDlg = new AccountsDialog(
-                branchChoices, curChoices, companies,
-                people.Select(p => new KeyValuePair<int, string>(p.Id, p.Name)).ToList())
-            { Owner = Window.GetWindow(this) };
-            listDlg.ShowDialog();
-            Load();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

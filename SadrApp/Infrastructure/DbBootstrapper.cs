@@ -43,6 +43,41 @@ public static class DbBootstrapper
         {
             db.Database.EnsureCreated();
         }
+
+        // 3) Schema fixes for tables that predate the EF model. Fresh installs get these
+        //    columns from the model itself; existing databases get them added here.
+        using (var con = new SqlConnection(b.ConnectionString))
+        {
+            con.Open();
+            // Cheques: received-from-customer (1) vs issued-to-provider (2) direction.
+            SchemaHelpers.AddColumnIfMissing(con, "Cheques", "Direction", "int NOT NULL DEFAULT(1)");
+            // Bank-transaction ledger: cheque cashing/payments post here and drive balances.
+            SchemaHelpers.AddTableIfMissing(con, "BankTransactions", """
+                CREATE TABLE [dbo].[BankTransactions] (
+                    [Id] int NOT NULL IDENTITY,
+                    [BankAccountId] int NOT NULL,
+                    [Kind] int NOT NULL,
+                    [Amount] decimal(18,4) NOT NULL,
+                    [Date] nvarchar(max) NOT NULL,
+                    [DateG] datetime2 NOT NULL,
+                    [Source] int NOT NULL,
+                    [ChequeId] int NULL,
+                    [EventKind] nvarchar(max) NULL,
+                    [Describtion] nvarchar(max) NOT NULL,
+                    [Deleted] bit NOT NULL,
+                    [RecordUniqueId] uniqueidentifier NOT NULL,
+                    [CreateUserId] uniqueidentifier NULL,
+                    [UpdateUserId] uniqueidentifier NULL,
+                    [CreateDateTime] datetime2 NULL,
+                    [UpdateDateTime] datetime2 NULL,
+                    CONSTRAINT [PK_BankTransactions] PRIMARY KEY ([Id])
+                );
+                CREATE INDEX [IX_BankTransactions_BankAccountId] ON [dbo].[BankTransactions] ([BankAccountId]);
+                CREATE INDEX [IX_BankTransactions_ChequeId] ON [dbo].[BankTransactions] ([ChequeId]);
+                """,
+                fkName: "FK_BankTransactions_Cheques_ChequeId",
+                fkDefinition: "CONSTRAINT [FK_BankTransactions_Cheques_ChequeId] FOREIGN KEY ([ChequeId]) REFERENCES [Cheques] ([Id])");
+        }
     }
 
     /// <summary>True when at least one login user already exists in the database.</summary>

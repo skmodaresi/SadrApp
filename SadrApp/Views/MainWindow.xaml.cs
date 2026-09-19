@@ -33,14 +33,22 @@ public partial class MainWindow : Window
         MnuUsers.Click += (_, _) => OpenTab(new UserListPage(), "کاربران برنامه");
         MnuBanks.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Banks, "بانک‌ها"), "بانک‌ها");
         MnuBankBranches.Click += (_, _) => OpenTab(new BankPage(), "شعب بانک‌ها");
+        MnuBankAccounts.Click += (_, _) => OpenBankAccounts();
+        MnuCheques.Click += (_, _) => OpenTab(new ChequesPage(), "مدیریت چک‌ها");
+        MnuChequeDashboard.Click += (_, _) => OpenTab(new ChequeDashboardPage(), "سررسید چک‌ها");
+        MnuBankTransactions.Click += (_, _) => OpenTab(new BankTransactionsPage(), "دفتر تراکنش‌های بانکی");
         MnuWarehouses.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Warehouses, "انبارها"), "انبارها");
         MnuCurrencies.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Currencies, "واحدهای پول"), "واحدهای پول");
         MnuRoles.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Roles, "نقش‌ها"), "نقش‌ها");
         MnuConnection.Click += (_, _) => ShowConnectionSettings();
+        MnuBackup.Click += (_, _) => new BackupWindow { Owner = this }.ShowDialog();
         MnuPrintSettings.Click += (_, _) => new SadrApp.Views.PrintSettingsWindow { Owner = this }.ShowDialog();
         MnuExit.Click += (_, _) => Close();
         Loaded += (_, _) => ShowConnectionSummary();
     }
+
+    /// <summary>Opens (or re-selects) the bank-accounts management tab.</summary>
+    public void OpenBankAccounts() => OpenTab(new BankAccountsPage(), "حساب‌های بانکی");
 
     /// <summary>Opens (or re-selects) the tasks tab, optionally filtered to one project.</summary>
     public void OpenTasksForProject(int? projectId)

@@ -50,6 +50,10 @@
         <Separator/>
         <MenuItem Header="🏦 بانک‌ها" x:Name="MnuBanks"/>
         <MenuItem Header="🏛 شعب بانک‌ها" x:Name="MnuBankBranches"/>
+        <MenuItem Header="💳 حساب‌های بانکی" x:Name="MnuBankAccounts"/>
+        <MenuItem Header="📒 دفتر تراکنش‌های بانکی" x:Name="MnuBankTransactions"/>
+        <MenuItem Header="🧾 مدیریت چک‌ها" x:Name="MnuCheques"/>
+        <MenuItem Header="📅 سررسید چک‌ها" x:Name="MnuChequeDashboard"/>
         <MenuItem Header="🏬 انبارها" x:Name="MnuWarehouses"/>
         <Separator/>
         <MenuItem Header="💱 واحدهای پول" x:Name="MnuCurrencies"/>
@@ -57,6 +61,7 @@
       </MenuItem>
       <MenuItem Header="⚙️ سیستم">
         <MenuItem Header="🔌 تنظیمات اتصال به پایگاه داده" x:Name="MnuConnection"/>
+        <MenuItem Header="💾 پشتیبان‌گیری و بازیابی" x:Name="MnuBackup"/>
         <MenuItem Header="🖨 تنظیمات چاپ فاکتور" x:Name="MnuPrintSettings"/>
         <Separator/>
         <MenuItem Header="↩️ خروج" x:Name="MnuExit"/>

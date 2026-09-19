@@ -36,6 +36,8 @@ public class SadrDbContext : DbContext
     public DbSet<InvoiceDetail> InvoiceDetails => Set<InvoiceDetail>();
     public DbSet<Price> Prices => Set<Price>();
     public DbSet<InvoicePrintSetting> InvoicePrintSettings => Set<InvoicePrintSetting>();
+    public DbSet<Cheque> Cheques => Set<Cheque>();
+    public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -87,6 +89,9 @@ public class SadrDbContext : DbContext
           .WithMany().HasForeignKey(a => a.CompanyId).OnDelete(DeleteBehavior.NoAction);
         mb.Entity<BankAccount>().HasOne(a => a.Currency)
           .WithMany().HasForeignKey(a => a.CurrencyId).OnDelete(DeleteBehavior.NoAction);
+
+        mb.Entity<BankTransaction>().HasOne(t => t.BankAccount)
+          .WithMany().HasForeignKey(t => t.BankAccountId).OnDelete(DeleteBehavior.NoAction);
 
         mb.Entity<Unit>().HasOne(u => u.ParentUnit)
           .WithMany().HasForeignKey(u => u.ParentUnitId).OnDelete(DeleteBehavior.NoAction);
