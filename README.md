@@ -71,3 +71,8 @@ app falls back to the default LocalDB instance (`(localdb)\MSSQLLocalDB`).
 | `installer/SadrSetup/` | Setup wizard (WinForms on .NET Framework 4.7.2, runs before any runtime install) |
 | `build-installer.ps1` | Produces the offline `dist/` package |
 | `ui-*.ps1` | UIAutomation smoke tests |
+
+## License
+
+Released under the [MIT License](LICENSE) — free to use, modify, and redistribute
+with attribution.
