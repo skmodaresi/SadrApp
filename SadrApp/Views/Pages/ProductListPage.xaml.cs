@@ -61,6 +61,22 @@ public partial class ProductListPage : UserControl
             }
             ListCtl.SetRows(rows);
             ListCtl.ShowExtraColumn("آخرین قیمت");
+
+            // Current stock (initial + accepted transfers) in two grouped queries.
+            var ids = rows.Select(r => r.Id).ToList();
+            var initialMap = await db.Products.Where(p => ids.Contains(p.Id))
+                .Select(p => new { p.Id, p.InitialQuantity }).ToDictionaryAsync(p => p.Id, p => p.InitialQuantity);
+            var accepted = await db.WarehouseTransfers
+                .Where(t => !t.Deleted && t.Accepted && ids.Contains(t.ProductId))
+                .Select(t => new { t.ProductId, t.Direction, t.Quantity }).ToListAsync();
+            var netMap = accepted.GroupBy(t => t.ProductId).ToDictionary(
+                g => g.Key,
+                g => g.Sum(t => t.Direction == WarehouseTransfer.DirectionIn ? t.Quantity : -t.Quantity));
+            foreach (var r in rows)
+            {
+                var stock = initialMap.GetValueOrDefault(r.Id) + netMap.GetValueOrDefault(r.Id);
+                r.Description += (r.Description.Length > 0 ? " | " : "") + "موجودی: " + stock.ToString("N0");
+            }
         }
         catch (Exception ex)
         {
@@ -94,9 +110,10 @@ public partial class ProductListPage : UserControl
                 FieldSpec.Text_("کد کالا", e?.Code, true),
                 FieldSpec.Multi_("توضیحات", e?.Description),
                 FieldSpec.Choice_("دسته اصلی", catChoices, e?.MainCategoryId),
-                FieldSpec.Choice_("واحد اصلی", unitChoices, e?.MainUnitId),
-                FieldSpec.Choice_("برند", brandChoices, e?.BrandId, optional: true)
-            }) { Owner = Window.GetWindow(this) };
+            FieldSpec.Choice_("واحد اصلی", unitChoices, e?.MainUnitId),
+            FieldSpec.Choice_("برند", brandChoices, e?.BrandId, optional: true),
+            FieldSpec.Numeric_("موجودی اولیه", e?.InitialQuantity)
+        }) { Owner = Window.GetWindow(this) };
             if (dlg.ShowDialog() != true) return;
 
             var now = DateTime.Now;
@@ -111,6 +128,7 @@ public partial class ProductListPage : UserControl
             e.MainCategoryId = dlg.GetChoice(3) ?? 0;
             e.MainUnitId = dlg.GetChoice(4) ?? 0;
             e.BrandId = dlg.GetChoice(5);
+            e.InitialQuantity = dlg.GetNumber(6) ?? 0; // opening stock; current = this + accepted transfers
             e.UpdateDateTime = now;
             await db.SaveChangesAsync();
             Load();

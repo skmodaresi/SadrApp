@@ -51,6 +51,36 @@ public static class DbBootstrapper
             con.Open();
             // Cheques: received-from-customer (1) vs issued-to-provider (2) direction.
             SchemaHelpers.AddColumnIfMissing(con, "Cheques", "Direction", "int NOT NULL DEFAULT(1)");
+            // Products: opening stock for warehouse management.
+            SchemaHelpers.AddColumnIfMissing(con, "Products", "InitialQuantity", "decimal(18,4) NOT NULL DEFAULT(0)");
+            // Warehouse transfers: product movements, pending until a warehouse keeper accepts them.
+            SchemaHelpers.AddTableIfMissing(con, "WarehouseTransfers", """
+                CREATE TABLE [dbo].[WarehouseTransfers] (
+                    [Id] int NOT NULL IDENTITY,
+                    [ProductId] int NOT NULL,
+                    [WareHouseId] int NULL,
+                    [Direction] int NOT NULL,
+                    [Quantity] decimal(18,4) NOT NULL,
+                    [TransferDate] nvarchar(max) NOT NULL,
+                    [TransferDateG] datetime2 NOT NULL,
+                    [Accepted] bit NOT NULL,
+                    [AcceptedByUserId] uniqueidentifier NULL,
+                    [InvoiceId] int NULL,
+                    [PersonId] int NULL,
+                    [Describtion] nvarchar(max) NOT NULL,
+                    [Deleted] bit NOT NULL,
+                    [RecordUniqueId] uniqueidentifier NOT NULL,
+                    [CreateUserId] uniqueidentifier NULL,
+                    [UpdateUserId] uniqueidentifier NULL,
+                    [CreateDateTime] datetime2 NULL,
+                    [UpdateDateTime] datetime2 NULL,
+                    CONSTRAINT [PK_WarehouseTransfers] PRIMARY KEY ([Id])
+                );
+                CREATE INDEX [IX_WarehouseTransfers_ProductId] ON [dbo].[WarehouseTransfers] ([ProductId]);
+                CREATE INDEX [IX_WarehouseTransfers_InvoiceId] ON [dbo].[WarehouseTransfers] ([InvoiceId]);
+                """,
+                fkName: "FK_WarehouseTransfers_Invoices_InvoiceId",
+                fkDefinition: "CONSTRAINT [FK_WarehouseTransfers_Invoices_InvoiceId] FOREIGN KEY ([InvoiceId]) REFERENCES [Invoices] ([Id])");
             // Bank-transaction ledger: cheque cashing/payments post here and drive balances.
             SchemaHelpers.AddTableIfMissing(con, "BankTransactions", """
                 CREATE TABLE [dbo].[BankTransactions] (

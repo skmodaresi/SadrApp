@@ -24,6 +24,7 @@ public class SadrDbContext : DbContext
     public DbSet<BankBranch> BankBranches => Set<BankBranch>();
     public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
     public DbSet<WareHouse> WareHouses => Set<WareHouse>();
+    public DbSet<WarehouseTransfer> WarehouseTransfers => Set<WarehouseTransfer>();
     public DbSet<AttributeDef> Attributes => Set<AttributeDef>();
     public DbSet<CategoryAttribute> CategoryAttributes => Set<CategoryAttribute>();
     public DbSet<ProductAttrib> ProductAttribs => Set<ProductAttrib>();

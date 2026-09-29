@@ -1,0 +1,34 @@
+<UserControl x:Class="SadrApp.Views.Pages.WarehouseTransfersPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:SadrApp.Views.Controls">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10" Text="حواله‌های انبار"/>
+
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="جهت:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#44506B"/>
+        <ComboBox x:Name="DirectionFilter" Width="130" Style="{StaticResource Combo}"/>
+        <TextBlock Text="وضعیت:" VerticalAlignment="Center" Margin="16,0,8,0" Foreground="#44506B"/>
+        <ComboBox x:Name="StatusFilter" Width="170" Style="{StaticResource Combo}"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="8" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <Button x:Name="BtnAccept" Content="✅ تأیید انجام حواله" Style="{StaticResource GhostBtn}"/>
+        <Button x:Name="BtnUnaccept" Content="↩️ لغو تأیید" Style="{StaticResource GhostBtn}" Margin="10,0,0,0"/>
+        <TextBlock x:Name="TxtRoleHint" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#8A93A6" FontSize="12"/>
+      </StackPanel>
+    </Border>
+
+    <controls:ListTableControl x:Name="ListCtl" Grid.Row="3"/>
+  </Grid>
+</UserControl>

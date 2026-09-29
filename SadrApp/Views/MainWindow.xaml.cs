@@ -21,6 +21,8 @@ public partial class MainWindow : Window
         MnuDetailAccounts.Click += (_, _) => OpenTab(new AccountingPage(AccountingPage.Level.Details, "حساب‌های تفصیلی"), "حساب‌های تفصیلی");
         MnuProductCategories.Click += (_, _) => OpenTab(new CategoryTreePage(true, "مدیریت دسته‌بندی کالا"), "دسته‌بندی کالا");
         MnuProducts.Click += (_, _) => OpenTab(new ProductListPage(), "کالاها");
+        MnuWarehouseTransfers.Click += (_, _) => OpenTab(new WarehouseTransfersPage(), "حواله‌های انبار");
+        MnuWarehouseStockReport.Click += (_, _) => OpenTab(new WarehouseStockReportPage(), "گزارش موجودی انبار");
         MnuBrands.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Brands, "برندها"), "برندها");
         MnuUnits.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Units, "واحدهای شمارش"), "واحدهای شمارش");
         MnuAttributes.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Attributes, "ویژگی‌های کالا"), "ویژگی‌های کالا");
@@ -40,6 +42,15 @@ public partial class MainWindow : Window
         MnuWarehouses.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Warehouses, "انبارها"), "انبارها");
         MnuCurrencies.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Currencies, "واحدهای پول"), "واحدهای پول");
         MnuRoles.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Roles, "نقش‌ها"), "نقش‌ها");
+
+        // Role-based visibility: invoices for sales people, warehouse transfers for
+        // warehouse keepers. Admin (CanRegisterInvoices/CanManageWarehouse both true)
+        // and existing plain "User" accounts see everything as before.
+        MnuSellInvoices.Visibility = MnuBuyInvoices.Visibility = MnuPreInvoices.Visibility
+            = MnuAllInvoices.Visibility = UserSession.CanRegisterInvoices
+                ? Visibility.Visible : Visibility.Collapsed;
+        MnuWarehouseTransfers.Visibility = MnuWarehouseStockReport.Visibility = UserSession.CanManageWarehouse
+            ? Visibility.Visible : Visibility.Collapsed;
         MnuConnection.Click += (_, _) => ShowConnectionSettings();
         MnuBackup.Click += (_, _) => new BackupWindow { Owner = this }.ShowDialog();
         MnuPrintSettings.Click += (_, _) => new SadrApp.Views.PrintSettingsWindow { Owner = this }.ShowDialog();

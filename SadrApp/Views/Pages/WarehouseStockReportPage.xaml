@@ -1,0 +1,38 @@
+<UserControl x:Class="SadrApp.Views.Pages.WarehouseStockReportPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10" Text="گزارش موجودی انبار"/>
+
+    <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,8">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="انبار:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#44506B"/>
+        <ComboBox x:Name="WarehouseFilter" Width="220" Style="{StaticResource Combo}"/>
+        <Button x:Name="BtnRefresh" Content="🔄 بازخوانی" Style="{StaticResource GhostBtn}" Margin="12,0,0,0"/>
+        <TextBlock x:Name="TxtSummary" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#44506B"/>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="6">
+      <DataGrid x:Name="StockGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                IsReadOnly="True" SelectionMode="Single" GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                Background="Transparent" BorderThickness="0" RowHeight="32" FontSize="13">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="کالا" Binding="{Binding Product}" Width="*"/>
+          <DataGridTextColumn Header="کد" Binding="{Binding Code}" Width="110"/>
+          <DataGridTextColumn Header="موجودی اولیه" Binding="{Binding Initial}" Width="120"/>
+          <DataGridTextColumn Header="تأیید شده (واقعی)" Binding="{Binding Confirmed}" Width="150"/>
+          <DataGridTextColumn Header="در انتظار ورود" Binding="{Binding PendingIn}" Width="130"/>
+          <DataGridTextColumn Header="در انتظار خروج" Binding="{Binding PendingOut}" Width="130"/>
+          <DataGridTextColumn Header="پیش‌بینی نهایی" Binding="{Binding Projected}" Width="140"/>
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
+  </Grid>
+</UserControl>

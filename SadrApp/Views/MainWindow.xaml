@@ -26,6 +26,10 @@
         <MenuItem Header="🛒 فاکتورهای خرید" x:Name="MnuBuyInvoices"/>
         <MenuItem Header="📋 همه فاکتورها" x:Name="MnuAllInvoices"/>
       </MenuItem>
+      <MenuItem Header="🏭 انبار">
+        <MenuItem Header="📦 حواله‌های انبار" x:Name="MnuWarehouseTransfers"/>
+        <MenuItem Header="📊 گزارش موجودی" x:Name="MnuWarehouseStockReport"/>
+      </MenuItem>
       <MenuItem Header="📊 حسابداری">
         <MenuItem Header="🧩 گروه‌های حساب" x:Name="MnuAccountGroups"/>
         <MenuItem Header="📚 حساب‌های کل" x:Name="MnuGeneralAccounts"/>

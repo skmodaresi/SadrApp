@@ -487,6 +487,39 @@ public partial class InvoiceEditorWindow : Window
             int? customerId = type == InvoiceTypeConsts.Buy ? null : partyId is > 0 ? partyId : null;
             int? providerId = type == InvoiceTypeConsts.Buy ? partyId is > 0 ? partyId : null : null;
 
+            // Non-blocking stock check for sell invoices: warn when selling more than the
+            // projected stock (opening + all confirmed/pending movements except this invoice's
+            // own). The seller can still save — goods may be on the way, or the keeper may
+            // not have accepted transfers yet.
+            if (type == InvoiceTypeConsts.Sell)
+            {
+                var productIds = rows.Select(r => r.ProductId).Distinct().ToList();
+                var prods = await db.Products.Where(p => productIds.Contains(p.Id))
+                    .Select(p => new { p.Id, p.Name, p.InitialQuantity }).ToDictionaryAsync(p => p.Id);
+                var selfId = _invoiceId;
+                var others = await db.WarehouseTransfers
+                    .Where(t => !t.Deleted && productIds.Contains(t.ProductId)
+                                && (selfId == null || t.InvoiceId != selfId))
+                    .Select(t => new { t.ProductId, t.Direction, t.Quantity })
+                    .ToListAsync();
+                var net = others.GroupBy(t => t.ProductId).ToDictionary(
+                    g => g.Key, g => g.Sum(t => t.Direction == WarehouseTransfer.DirectionIn ? t.Quantity : -t.Quantity));
+                var shortfalls = new List<string>();
+                foreach (var g in rows.GroupBy(r => r.ProductId))
+                {
+                    var projected = (prods.TryGetValue(g.Key, out var pr) ? pr.InitialQuantity : 0m)
+                                    + net.GetValueOrDefault(g.Key)
+                                    - g.Sum(r => r.Amount);
+                    if (projected < 0)
+                        shortfalls.Add($"• {(prods.TryGetValue(g.Key, out var p2) ? p2.Name : "کالای #" + g.Key)}: کسری {(-projected):N0}");
+                }
+                if (shortfalls.Count > 0 && MessageBox.Show(
+                        "موجودی پیش‌بینی‌شده کالاهای زیر کافی نیست:\n" + string.Join("\n", shortfalls) +
+                        "\n\nبا این حال فاکتور ذخیره شود؟", "هشدار موجودی",
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                    return;
+            }
+
             Invoice inv;
             if (_invoiceId is int id)
             {
@@ -554,6 +587,12 @@ public partial class InvoiceEditorWindow : Window
             }
 
             await db.SaveChangesAsync();
+
+            // Buy/sell invoices move goods: (re)generate one pending warehouse transfer per
+            // product line; a warehouse keeper later accepts them with the real date.
+            if (inv.InvoiceType == InvoiceTypeConsts.Buy || inv.InvoiceType == InvoiceTypeConsts.Sell)
+                await WarehouseStock.SyncInvoiceTransfersAsync(db, inv, UserSession.CurrentUserId);
+
             SavedInvoiceId = inv.Id;
             DialogResult = true;
             Close();

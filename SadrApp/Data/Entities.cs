@@ -123,6 +123,8 @@ public class Product
     [Column("MainCategoryId")] public int MainCategoryId { get; set; }
     [Column("MainUnitId")] public int MainUnitId { get; set; }
     public int? BrandId { get; set; }
+    /// <summary>Opening stock (موجودی اولیه); current stock = this + accepted transfers.</summary>
+    public decimal InitialQuantity { get; set; }
     public bool Deleted { get; set; }
     public Guid RecordUniqueId { get; set; }
     public Guid? CreateUserId { get; set; }

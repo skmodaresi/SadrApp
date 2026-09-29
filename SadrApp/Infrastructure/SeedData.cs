@@ -32,6 +32,18 @@ public static class SeedData
                 IsActive = true, Deleted = false, RecordUniqueId = Guid.NewGuid(),
                 CreateDateTime = DateTime.Now, UpdateDateTime = DateTime.Now
             });
+            db.Roles.Add(new Role
+            {
+                Name = "Warehouse", Description = "انباردار - ثبت و تأیید حواله‌های انبار",
+                IsActive = true, Deleted = false, RecordUniqueId = Guid.NewGuid(),
+                CreateDateTime = DateTime.Now, UpdateDateTime = DateTime.Now
+            });
+            db.Roles.Add(new Role
+            {
+                Name = "Sales", Description = "فروشنده - ثبت فاکتورها",
+                IsActive = true, Deleted = false, RecordUniqueId = Guid.NewGuid(),
+                CreateDateTime = DateTime.Now, UpdateDateTime = DateTime.Now
+            });
         }
 
         // No default user is seeded here: the first-run wizard (FirstRunSetupWindow)
