@@ -7,7 +7,7 @@ WPF on .NET 10, SQL Server (LocalDB or full) via Entity Framework Core, QuestPDF
 ## Download (for testers)
 
 Grab the ready-to-run offline installer from the
-[**v1.1 release page**](https://github.com/skmodaresi/SadrApp/releases/download/v1.1/SadrApp-Setup-1.1.zip)
+[**v1.2 release page**](https://github.com/skmodaresi/SadrApp/releases/download/v1.2/SadrApp-Setup-1.2.zip)
 or browse all releases on the [Releases](https://github.com/skmodaresi/SadrApp/releases) page.
 
 The zip contains the full offline setup — .NET 10 runtime and SQL Server 2022 LocalDB installers
@@ -26,8 +26,12 @@ Windows 11, otherwise install it from Microsoft.
 - Projects and tasks with same-project prerequisites, task reports, and progress tracking
 - Products with categories, brands, units, attributes, and **price history** (latest price feeds the invoice editor as default price + default discount)
 - Invoices with live row totals, discounts, three print layouts, and PDF output
+- Cash boxes alongside bank accounts, money transactions (receipts / payments / transfers),
+  several payments per invoice, and task-report costs paid out of a cash box
 - Accounting trees (group / general / subsidiary / detail accounts), banks, customers & providers
 - Users and roles with PBKDF2-hashed passwords; login lockout after 5 failed attempts
+- Per-user font settings (menus, headings, labels, inputs, grids — together or separately)
+  and a no-data-loss "update database schema" action
 - Thousands-separated numeric input everywhere, Jalali (Persian) dates
 
 ## Offline installer for testers
@@ -48,8 +52,11 @@ On first launch the app creates its schema and asks for the main admin username/
 To publish a new tester release, zip `dist/SadrApp-Setup/` and run:
 
 ```
-powershell -ExecutionPolicy Bypass -File scripts/make-release.ps1 -Zip dist/SadrApp-Setup-<ver>.zip -Tag v<ver> -Title "SadrApp <ver>"
+powershell -ExecutionPolicy Bypass -File scripts/make-release.ps1 -Zip dist/SadrApp-Setup-<ver>.zip -Tag v<ver> -Title "SadrApp <ver>" [-NotesFile release-notes.md]
 ```
+
+`-NotesFile` (optional) replaces the default tester blurb with your own release notes and
+also updates the body of an already-existing release.
 
 ## Building from source
 

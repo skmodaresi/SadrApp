@@ -5,7 +5,10 @@
 param(
     [Parameter(Mandatory = $true)][string]$Zip,
     [Parameter(Mandatory = $true)][string]$Tag,
-    [string]$Title
+    [string]$Title,
+    # Optional release-notes file; overrides the default tester blurb when given.
+    # Used with -NotesFile for updating an existing release's body.
+    [string]$NotesFile
 )
 $ErrorActionPreference = 'Stop'
 $repo = 'skmodaresi/SadrApp'
@@ -33,6 +36,10 @@ admin username/password - no default credentials exist.
 Requires Windows 10/11 x64. Microsoft Visual C++ 2015-2022 Redistributable
 (x64) must be present (it usually already is; LocalDB needs it).
 '@
+if ($NotesFile) {
+    if (-not (Test-Path $NotesFile)) { throw "notes file not found: $NotesFile" }
+    $notes = [IO.File]::ReadAllText($NotesFile)
+}
 
 function Invoke-ApiRetry {
     param($Method, $Uri, $Body = $null, $TimeoutSec = 120)
@@ -60,6 +67,12 @@ if (-not $rel -or -not $rel.id) {
     $rel = Invoke-ApiRetry POST "https://api.github.com/repos/$repo/releases" $json
 } else {
     Write-Host "release $Tag already exists (id $($rel.id)) - uploading asset to it"
+    if ($NotesFile) {
+        # Update the body of the existing release too.
+        $json = [Text.Encoding]::UTF8.GetBytes((@{ body = $notes } | ConvertTo-Json))
+        Invoke-ApiRetry PATCH "https://api.github.com/repos/$repo/releases/$($rel.id)" $json | Out-Null
+        Write-Host "release body updated from $NotesFile"
+    }
 }
 
 $assetName = [IO.Path]::GetFileName($Zip)
