@@ -65,6 +65,12 @@ public partial class InvoiceMoneyWindow : Window
             var total = rows.Sum(r => r.Type == AccountTransactionTypeConsts.Receipt ? r.Value : -r.Value);
             TxtBalance.Text = "جمع خالص: " + total.ToString("N0") + " ريال";
             TxtTitle.Text = $"تراکنش‌های مالی فاکتور {_invoiceNumber}";
+
+            // Invoice total vs paid (receipts/transfers minus payments) and remaining.
+            var inv = await db.Invoices.Where(i => i.Id == _invoiceId)
+                .Select(i => (decimal?)i.TotalPrice).SingleOrDefaultAsync() ?? 0m;
+            var remaining = Math.Max(0, inv - total);
+            TxtTotals.Text = $"جمع فاکتور: {inv:N0} ريال | پرداختی: {Math.Max(0, total):N0} ريال | باقیمانده: {remaining:N0} ريال";
         }
         catch (Exception ex)
         {

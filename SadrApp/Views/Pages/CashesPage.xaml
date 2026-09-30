@@ -6,8 +6,13 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <TextBlock Grid.Row="0" Style="{StaticResource H1}" Margin="0,0,0,10" Text="صندوق‌ها"/>
     <controls:ListTableControl x:Name="ListCtl" Grid.Row="1"/>
+    <Border x:Name="StatementCard" Grid.Row="2" Background="White" CornerRadius="8" Padding="10"
+            Margin="0,8,0,0" Visibility="Collapsed">
+      <StackPanel x:Name="StatementPanel"/>
+    </Border>
   </Grid>
 </UserControl>

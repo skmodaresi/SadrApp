@@ -20,6 +20,10 @@ public partial class CashesPage : UserControl
         ListCtl.DeleteClicked += (_, _) => Delete();
         ListCtl.RefreshClicked += (_, _) => Load();
         ListCtl.RowDoubleClicked += (_, _) => Edit();
+        ListCtl.InnerGrid.SelectionChanged += (_, _) =>
+        {
+            if (ListCtl.SelectedRow is RowBase r) ShowStatement(r.Id);
+        };
         Loaded += (_, _) => Load();
     }
 
@@ -60,6 +64,116 @@ public partial class CashesPage : UserControl
             MessageBox.Show(ex.Message, "خطا در بارگذاری", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    /// <summary>
+    /// Transaction history for the selected cash box, mirroring the bank-account statement:
+    /// newest first with a running balance rebuilt backwards from the current balance.
+    /// </summary>
+    private async void ShowStatement(int cashId)
+    {
+        try
+        {
+            await using var db = SadrDb.New();
+            var cash = await db.Cashes.Where(c => c.Id == cashId)
+                .Select(c => new { c.Name, c.CurrentBalance }).SingleOrDefaultAsync();
+            if (cash is null) { StatementCard.Visibility = Visibility.Collapsed; return; }
+
+            var txs = await db.AccountTransactions
+                .Where(t => !t.Deleted && t.CashId == cashId)
+                .OrderByDescending(t => t.DateG).ThenByDescending(t => t.Id)
+                .Take(12)
+                .Select(t => new { t.Type, t.Value, t.DateG, t.Description })
+                .ToListAsync();
+
+            StatementPanel.Children.Clear();
+
+            var head = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var title = new TextBlock
+            {
+                Style = (Style)FindResource("H2"),
+                Text = $"صورت‌حساب «{cash.Name}» — {txs.Count} تراکنش آخر"
+            };
+            Grid.SetColumn(title, 0);
+            head.Children.Add(title);
+            var bal = new TextBlock
+            {
+                Style = (Style)FindResource("H2"),
+                Text = "موجودی فعلی: " + cash.CurrentBalance.ToString("N0"),
+                Foreground = B(cash.CurrentBalance < 0 ? "#D9534F" : "#1F8A3D")
+            };
+            Grid.SetColumn(bal, 1);
+            head.Children.Add(bal);
+            StatementPanel.Children.Add(head);
+
+            var running = cash.CurrentBalance;
+            foreach (var t in txs)
+            {
+                var deposit = t.Type == AccountTransactionTypeConsts.Receipt
+                           || t.Type == AccountTransactionTypeConsts.Transfer;
+                var after = running;                     // balance after this row (newest = current)
+                running += deposit ? -t.Value : t.Value; // step back to before this row
+
+                var line = new Grid { Margin = new Thickness(2, 1, 2, 1) };
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(95) });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+
+                var d = new TextBlock
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Foreground = B("#44506B"),
+                    Text = PersianDate.ToPersian(t.DateG)
+                };
+                Grid.SetColumn(d, 0);
+                line.Children.Add(d);
+
+                var desc = new TextBlock
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Text = t.Description,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    ToolTip = t.Description
+                };
+                Grid.SetColumn(desc, 1);
+                line.Children.Add(desc);
+
+                var amt = new TextBlock
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(10, 0, 10, 0),
+                    Text = (deposit ? "+ " : "− ") + t.Value.ToString("N0"),
+                    Foreground = B(deposit ? "#1F8A3D" : "#D9534F"),
+                    FontWeight = FontWeights.SemiBold
+                };
+                Grid.SetColumn(amt, 2);
+                line.Children.Add(amt);
+
+                var run = new TextBlock
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Text = "مانده: " + after.ToString("N0"),
+                    Foreground = B("#44506B")
+                };
+                Grid.SetColumn(run, 3);
+                line.Children.Add(run);
+
+                StatementPanel.Children.Add(line);
+            }
+
+            StatementCard.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private static System.Windows.Media.Brush B(string hex) =>
+        (System.Windows.Media.Brush)(new System.Windows.Media.BrushConverter().ConvertFromString(hex)
+            ?? System.Windows.Media.Brushes.Black);
 
     private void Edit()
     {

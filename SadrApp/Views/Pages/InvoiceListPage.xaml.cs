@@ -87,18 +87,47 @@ public partial class InvoiceListPage : UserControl
             var query = db.Invoices.Where(i => !i.Deleted);
             if (t >= 0) query = query.Where(i => i.InvoiceType == t);
 
-            var rows = await query.OrderByDescending(i => i.Id).Select(i => new RowBase
+            var raw = await query.OrderByDescending(i => i.Id).Select(i => new
             {
-                Id = i.Id,
-                Title = InvoiceTypeConsts.Icon(i.InvoiceType) + " " + i.InvoiceNumber,
-                Code = i.InvoiceDate,
-                Description = (i.InvoiceType == InvoiceTypeConsts.Buy
-                                    ? (i.Provider != null ? i.Provider.Name : "—")
-                                    : (i.Customer != null ? i.Customer.Name : "—"))
-                              + " | جمع: " + i.TotalPrice.ToString("N0")
-                              + " | " + InvoiceStatusConsts.Label(i.Status),
-                Extra = i.Description
+                i.Id, i.InvoiceType, i.InvoiceNumber, i.InvoiceDate, i.TotalPrice, i.Status, i.Description,
+                Party = i.InvoiceType == InvoiceTypeConsts.Buy
+                            ? (i.Provider != null ? i.Provider.Name : "—")
+                            : (i.Customer != null ? i.Customer.Name : "—")
             }).ToListAsync();
+
+            // Paid total per invoice = receipts/transfers against linked money transactions,
+            // minus payments (e.g. money returned on a buy invoice).
+            var ids = raw.Select(r => r.Id).ToList();
+            var paid = await db.InvoiceMoneyTransactions
+                .Where(l => !l.Deleted && ids.Contains(l.InvoiceId)
+                            && (l.AccountTransaction!.Type == AccountTransactionTypeConsts.Receipt
+                                || l.AccountTransaction.Type == AccountTransactionTypeConsts.Transfer))
+                .GroupBy(l => l.InvoiceId)
+                .Select(g => new { InvoiceId = g.Key, Sum = g.Sum(x => (decimal?)x.AccountTransaction!.Value) ?? 0m })
+                .ToDictionaryAsync(x => x.InvoiceId, x => x.Sum);
+            var refunded = await db.InvoiceMoneyTransactions
+                .Where(l => !l.Deleted && ids.Contains(l.InvoiceId)
+                            && l.AccountTransaction!.Type == AccountTransactionTypeConsts.Payment)
+                .GroupBy(l => l.InvoiceId)
+                .Select(g => new { InvoiceId = g.Key, Sum = g.Sum(x => (decimal?)x.AccountTransaction!.Value) ?? 0m })
+                .ToDictionaryAsync(x => x.InvoiceId, x => x.Sum);
+
+            var rows = raw.Select(i =>
+            {
+                var net = paid.GetValueOrDefault(i.Id) - refunded.GetValueOrDefault(i.Id);
+                return new RowBase
+                {
+                    Id = i.Id,
+                    Title = InvoiceTypeConsts.Icon(i.InvoiceType) + " " + i.InvoiceNumber,
+                    Code = i.InvoiceDate
+                           + " | پرداختی: " + net.ToString("N0")
+                           + " | باقیمانده: " + Math.Max(0, i.TotalPrice - net).ToString("N0"),
+                    Description = i.Party
+                                  + " | جمع: " + i.TotalPrice.ToString("N0")
+                                  + " | " + InvoiceStatusConsts.Label(i.Status),
+                    Extra = i.Description
+                };
+            }).ToList();
             ListCtl.SetRows(rows);
         }
         catch (Exception ex)

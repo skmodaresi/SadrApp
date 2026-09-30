@@ -197,9 +197,14 @@ public static class DbBootstrapper
             })
             {
                 using var idx = con.CreateCommand();
+                // Build the dynamic DDL into a variable first: T-SQL does not allow
+                // function calls (QUOTENAME/PARSENAME) directly inside EXEC's argument.
                 idx.CommandText =
                     "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = @i AND object_id = OBJECT_ID(@t)) " +
-                    "EXEC(N'CREATE INDEX ' + QUOTENAME(@i) + N' ON dbo.' + QUOTENAME(PARSENAME(@t,1)) + N' (' + QUOTENAME(@c) + N')');";
+                    "BEGIN " +
+                    "DECLARE @s nvarchar(max) = N'CREATE INDEX ' + QUOTENAME(@i) + N' ON dbo.' + " +
+                    "QUOTENAME(PARSENAME(@t,1)) + N' (' + QUOTENAME(@c) + N')'; EXEC(@s); " +
+                    "END";
                 idx.Parameters.AddWithValue("@i", index);
                 idx.Parameters.AddWithValue("@t", $"dbo.{table}");
                 idx.Parameters.AddWithValue("@c", col);
