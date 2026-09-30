@@ -60,16 +60,24 @@ public partial class CompanyListPage : UserControl
             var managerChoices = people.Select(p => new KeyValuePair<int, string>(p.Id, p.Name)).ToList();
             managerChoices.Insert(0, new KeyValuePair<int, string>(0, "— انتخاب نشده —"));
 
+            // حساب‌های معین برای ایجاد خودکار حساب تفصیلی با همان کد شرکت
+            var subsidiaryChoices = await db.SubSidiaryAccounts.Where(s => !s.Deleted)
+                .OrderBy(s => s.Code)
+                .Select(s => new KeyValuePair<int, string>(s.Id, s.Code + " - " + s.Name)).ToListAsync();
+            subsidiaryChoices.Insert(0, new KeyValuePair<int, string>(0, "— بدون حساب معین —"));
+            var currentSub = e is null ? null : await DetailAccountService.GetCurrentSubSidiaryForCompanyAsync(db, e.Id);
+
             var dlg = new FieldEditorWindow(id is null ? "شرکت جدید" : "ویرایش شرکت", new[]
             {
                 FieldSpec.Text_("نام کامل شرکت", e?.FullName, true),
                 FieldSpec.Text_("کد", e?.Code),
-                FieldSpec.Text_("شناسه ملی", e?.NationalId),
+                FieldSpec.Text_("شناسه ملی (۱۱ رقم)", e?.NationalId),
                 FieldSpec.Text_("شماره ثبت", e?.RegisterId),
                 FieldSpec.Text_("تلفن", e?.Tel),
                 FieldSpec.Text_("ایمیل", e?.Email),
                 FieldSpec.Multi_("آدرس", e?.Address),
-                FieldSpec.Choice_("مدیر شرکت", managerChoices, e?.ManagerId ?? 0)
+                FieldSpec.Choice_("مدیر شرکت", managerChoices, e?.ManagerId ?? 0),
+                FieldSpec.Choice_("حساب معین", subsidiaryChoices, currentSub ?? 0)
             }) { Owner = Window.GetWindow(this) };
             if (dlg.ShowDialog() != true) return;
 
@@ -79,9 +87,21 @@ public partial class CompanyListPage : UserControl
                 e = new Company { GUID = Guid.NewGuid(), RecordUniqueId = Guid.NewGuid(), CreateDateTime = now };
                 db.Companies.Add(e);
             }
+            // کد شرکت نباید بین شرکت‌ها تکراری باشد
+            var companyCode = (dlg.GetText(1) ?? "").Trim();
+            if (companyCode.Length > 0 && await db.Companies.AnyAsync(c => !c.Deleted && c.Code == companyCode && c.Id != id))
+            {
+                ShowError(CodeRules.MsgCodeDuplicate);
+                return;
+            }
+
+            // شناسه ملی (حقوقی): اختیاری، اما در صورت ورود باید معتبر باشد
+            var nationalId = CodeRules.NormalizeDigits(dlg.GetText(2));
+            if (CodeRules.ValidateLegalNationalId(nationalId) is { } legalErr) { ShowError(legalErr); return; }
+
             e.FullName = dlg.GetText(0)!.Trim();
-            e.Code = dlg.GetText(1) ?? "";
-            e.NationalId = dlg.GetText(2) ?? "";
+            e.Code = companyCode;
+            e.NationalId = nationalId;
             e.RegisterId = dlg.GetText(3) ?? "";
             e.Tel = dlg.GetText(4) ?? "";
             e.Email = dlg.GetText(5);
@@ -91,11 +111,13 @@ public partial class CompanyListPage : UserControl
             await db.SaveChangesAsync();
             // Keep the CustomersProviders mirror in sync for invoices.
             await CustomersProviderService.SyncCompanyAsync(db, e);
+            // حساب تفصیلی خودکار با همان کد، زیر حساب معین انتخاب‌شده
+            await DetailAccountService.SyncCompanyAsync(db, e, dlg.GetChoice(8));
             Load();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "خطا در ذخیره", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError(ex.Message);
         }
     }
 
@@ -121,4 +143,5 @@ public partial class CompanyListPage : UserControl
     }
 
     private static void Info(string m) => MessageBox.Show(m, "اطلاع", MessageBoxButton.OK, MessageBoxImage.Information);
+    private static void ShowError(string m) => MessageBox.Show(m, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning);
 }

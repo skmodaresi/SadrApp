@@ -124,6 +124,8 @@ public partial class ProductListPage : UserControl
             }
             e.Name = dlg.GetText(0)!.Trim();
             e.Code = dlg.GetText(1)!.Trim();
+            if (e.Code.Length > 0 && await db.Products.AnyAsync(x => !x.Deleted && x.Code == e.Code && x.Id != id))
+            { MessageBox.Show(CodeRules.MsgCodeDuplicate, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             e.Description = dlg.GetText(2) ?? "";
             e.MainCategoryId = dlg.GetChoice(3) ?? 0;
             e.MainUnitId = dlg.GetChoice(4) ?? 0;

@@ -48,6 +48,7 @@ public partial class App : Application
             {
                 PrintSettingsService.EnsureTableAndSeed(db);   // invoice print layouts table + 3 defaults
                 await CustomersProviderService.BackfillAsync(db); // mirror rows for existing people/companies
+                await DetailAccountService.BackfillAsync(db);     // detail accounts for people/companies with a code
                 TaskService.EnsureSchema(db);                  // TaskReports.FreeTaskId FK must not block project-task reports
             }
         }

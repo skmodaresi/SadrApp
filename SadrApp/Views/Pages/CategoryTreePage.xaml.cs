@@ -87,12 +87,15 @@ public partial class CategoryTreePage : UserControl
         {
             await using var db = SadrDb.New();
             var now = DateTime.Now;
+            var newCode = (dlg.GetText(1) ?? "").Trim();
+            if (newCode.Length > 0 && await CategoryCodeExistsAsync(db, newCode, null))
+            { MessageBox.Show(CodeRules.MsgCodeDuplicate, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             if (_isProduct)
             {
                 db.ProductCategories.Add(new ProductCategory
                 {
                     Name = dlg.GetText(0)!.Trim(),
-                    Code = dlg.GetText(1),
+                    Code = newCode.Length > 0 ? newCode : null,
                     Description = dlg.GetText(2),
                     ParentId = parent?.Id,
                     RecordUniqueId = Guid.NewGuid(),
@@ -106,7 +109,7 @@ public partial class CategoryTreePage : UserControl
                 db.ProjectCategories.Add(new ProjectCategory
                 {
                     Name = dlg.GetText(0)!.Trim(),
-                    Code = dlg.GetText(1),
+                    Code = newCode.Length > 0 ? newCode : null,
                     Description = dlg.GetText(2),
                     ParentId = parent?.Id,
                     RecordUniqueId = Guid.NewGuid(),
@@ -141,16 +144,19 @@ public partial class CategoryTreePage : UserControl
         {
             await using var db = SadrDb.New();
             var now = DateTime.Now;
+            var editCode = (dlg.GetText(1) ?? "").Trim();
+            if (editCode.Length > 0 && await CategoryCodeExistsAsync(db, editCode, node.Id))
+            { MessageBox.Show(CodeRules.MsgCodeDuplicate, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             if (_isProduct)
             {
                 var e = await db.ProductCategories.FirstAsync(c => c.Id == node.Id);
-                e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1); e.Description = dlg.GetText(2);
+                e.Name = dlg.GetText(0)!.Trim(); e.Code = editCode.Length > 0 ? editCode : null; e.Description = dlg.GetText(2);
                 e.UpdateDateTime = now;
             }
             else
             {
                 var e = await db.ProjectCategories.FirstAsync(c => c.Id == node.Id);
-                e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1); e.Description = dlg.GetText(2);
+                e.Name = dlg.GetText(0)!.Trim(); e.Code = editCode.Length > 0 ? editCode : null; e.Description = dlg.GetText(2);
                 e.UpdateDateTime = now;
             }
             await db.SaveChangesAsync();
@@ -216,6 +222,12 @@ public partial class CategoryTreePage : UserControl
             CollectChildren(c.Id, into);
         }
     }
+
+    /// <summary>کد دسته نباید بین دسته‌های همان صفحه تکراری باشد.</summary>
+    private async Task<bool> CategoryCodeExistsAsync(SadrDbContext db, string code, int? exceptId) =>
+        _isProduct
+            ? await db.ProductCategories.AnyAsync(c => !c.Deleted && c.Code == code && c.Id != exceptId)
+            : await db.ProjectCategories.AnyAsync(c => !c.Deleted && c.Code == code && c.Id != exceptId);
 
     private async Task<bool> IsUsed(int id) =>
         _isProduct

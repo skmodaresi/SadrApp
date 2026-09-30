@@ -96,10 +96,13 @@ public partial class SimpleListPage : UserControl
                         FieldSpec.Multi_("توضیحات", e?.Description)
                     }) { Owner = Window.GetWindow(this) };
                     if (dlg.ShowDialog() != true) return;
+                    var brandCode = (dlg.GetText(1) ?? "").Trim();
+                    if (brandCode.Length > 0 && await db.Brands.AnyAsync(x => !x.Deleted && x.Code == brandCode && x.Id != id))
+                    { ShowError(CodeRules.MsgCodeDuplicate); return; }
                     var now = DateTime.Now;
                     if (e is null)
                         db.Brands.Add(e = new Brand { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now });
-                    e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1) ?? ""; e.Description = dlg.GetText(2);
+                    e.Name = dlg.GetText(0)!.Trim(); e.Code = brandCode; e.Description = dlg.GetText(2);
                     e.UpdateDateTime = now;
                     break;
                 }
@@ -137,10 +140,13 @@ public partial class SimpleListPage : UserControl
                         FieldSpec.Multi_("توضیحات", e?.Description)
                     }) { Owner = Window.GetWindow(this) };
                     if (dlg.ShowDialog() != true) return;
+                    var currencyCode = (dlg.GetText(1) ?? "").Trim();
+                    if (currencyCode.Length > 0 && await db.Currencies.AnyAsync(x => !x.Deleted && x.Code == currencyCode && x.Id != id))
+                    { ShowError(CodeRules.MsgCodeDuplicate); return; }
                     var now = DateTime.Now;
                     if (e is null)
                         db.Currencies.Add(e = new Currency { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now });
-                    e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1); e.Description = dlg.GetText(2);
+                    e.Name = dlg.GetText(0)!.Trim(); e.Code = currencyCode.Length > 0 ? currencyCode : null; e.Description = dlg.GetText(2);
                     e.UpdateDateTime = now;
                     break;
                 }
@@ -154,10 +160,13 @@ public partial class SimpleListPage : UserControl
                         FieldSpec.Multi_("توضیحات", e?.Description)
                     }) { Owner = Window.GetWindow(this) };
                     if (dlg.ShowDialog() != true) return;
+                    var bankCode = (dlg.GetText(1) ?? "").Trim();
+                    if (bankCode.Length > 0 && await db.Banks.AnyAsync(x => !x.Deleted && x.Code == bankCode && x.Id != id))
+                    { ShowError(CodeRules.MsgCodeDuplicate); return; }
                     var now = DateTime.Now;
                     if (e is null)
                         db.Banks.Add(e = new Bank { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now });
-                    e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1) ?? ""; e.Description = dlg.GetText(2);
+                    e.Name = dlg.GetText(0)!.Trim(); e.Code = bankCode; e.Description = dlg.GetText(2);
                     e.UpdateDateTime = now;
                     break;
                 }
@@ -174,10 +183,13 @@ public partial class SimpleListPage : UserControl
                         FieldSpec.Check_("فعال", e?.Active ?? true)
                     }) { Owner = Window.GetWindow(this) };
                     if (dlg.ShowDialog() != true) return;
+                    var whCode = (dlg.GetText(1) ?? "").Trim();
+                    if (whCode.Length > 0 && await db.WareHouses.AnyAsync(x => !x.Deleted && x.Code == whCode && x.Id != id))
+                    { ShowError(CodeRules.MsgCodeDuplicate); return; }
                     var now = DateTime.Now;
                     if (e is null)
                         db.WareHouses.Add(e = new WareHouse { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now });
-                    e.Name = dlg.GetText(0)!.Trim(); e.Code = dlg.GetText(1); e.Tel = dlg.GetText(2);
+                    e.Name = dlg.GetText(0)!.Trim(); e.Code = whCode.Length > 0 ? whCode : null; e.Tel = dlg.GetText(2);
                     e.Address = dlg.GetText(3) ?? ""; e.Description = dlg.GetText(4) ?? "";
                     e.Active = dlg.GetCheck(5);
                     e.UpdateDateTime = now;
@@ -262,8 +274,11 @@ public partial class SimpleListPage : UserControl
                         db.CustomersProviders.Add(e = new CustomersProvider { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now });
                     if (!isAuto)
                     {
+                        var cpCode = (dlg.GetText(1) ?? "").Trim();
+                        if (cpCode.Length > 0 && await db.CustomersProviders.AnyAsync(x => !x.Deleted && x.Code == cpCode && x.Id != id))
+                        { ShowError(CodeRules.MsgCodeDuplicate); return; }
                         e.Name = dlg.GetText(0)!.Trim();
-                        e.Code = dlg.GetText(1) ?? "";
+                        e.Code = cpCode;
                         var pid = dlg.GetChoice(2);
                         var cid = dlg.GetChoice(3);
                         e.PersonId = pid is > 0 ? pid : null;
@@ -357,4 +372,5 @@ public partial class SimpleListPage : UserControl
 
     private static void Info(string m) => MessageBox.Show(m, "اطلاع", MessageBoxButton.OK, MessageBoxImage.Information);
     private static void Warn(string m) => MessageBox.Show(m, "حذف ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning);
+    private static void ShowError(string m) => MessageBox.Show(m, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning);
 }

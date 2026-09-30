@@ -56,21 +56,29 @@ public partial class PeopleListPage : UserControl
             var e = id is null ? null : await db.People.FirstAsync(x => x.Id == id);
             var genderChoices = new List<KeyValuePair<int, string>> { new(0, "مرد"), new(1, "زن") };
 
+            // حساب‌های معین برای ایجاد خودکار حساب تفصیلی با همان کد شخص
+            var subsidiaryChoices = await db.SubSidiaryAccounts.Where(s => !s.Deleted)
+                .OrderBy(s => s.Code)
+                .Select(s => new KeyValuePair<int, string>(s.Id, s.Code + " - " + s.Name)).ToListAsync();
+            subsidiaryChoices.Insert(0, new KeyValuePair<int, string>(0, "— بدون حساب معین —"));
+            var currentSub = e is null ? null : await DetailAccountService.GetCurrentSubSidiaryForPersonAsync(db, e.Id);
+
             var dlg = new FieldEditorWindow(id is null ? "شخص جدید" : "ویرایش شخص", new[]
             {
                 FieldSpec.Text_("نام", e?.FirstName, true),
                 FieldSpec.Text_("نام میانی", e?.MiddleName),
                 FieldSpec.Text_("نام خانوادگی", e?.LastName, true),
                 FieldSpec.Text_("عنوان/لقب", e?.Title),
-                FieldSpec.Text_("کد", e?.Code),
+                FieldSpec.Text_("کد ملی (۱۰ رقم)", e?.Code, true),
                 FieldSpec.Choice_("جنسیت", genderChoices, e?.Gender),
                 FieldSpec.Text_("نام پدر", e?.FatherName),
                 FieldSpec.Date_("تاریخ تولد", PersianDate.Parse(e?.BirthDate)),
-                FieldSpec.Text_("شماره شناسنامه/کد ملی", e?.CertNumber),
+                FieldSpec.Text_("شماره شناسنامه", e?.CertNumber),
                 FieldSpec.Text_("تلفن همراه", e?.PhoneNumber),
                 FieldSpec.Text_("ایمیل", e?.Email),
                 FieldSpec.Multi_("آدرس", e?.Address),
-                FieldSpec.Check_("فعال", e?.IsActive ?? true)
+                FieldSpec.Check_("فعال", e?.IsActive ?? true),
+                FieldSpec.Choice_("حساب معین", subsidiaryChoices, currentSub ?? 0)
             }) { Owner = Window.GetWindow(this) };
             if (dlg.ShowDialog() != true) return;
 
@@ -80,11 +88,22 @@ public partial class PeopleListPage : UserControl
                 e = new Person { RecordUniqueId = Guid.NewGuid(), CreateDateTime = now };
                 db.People.Add(e);
             }
+            // کد ملی: یکسان‌سازی ارقام فارسی + اعتبارسنجی الگوریتم استاندارد
+            var code = CodeRules.NormalizeDigits(dlg.GetText(4));
+            if (CodeRules.ValidateNationalId(code) is { } natErr) { ShowError(natErr); return; }
+
+            // کد نباید بین اشخاص تکراری باشد
+            if (await db.People.AnyAsync(p => !p.Deleted && p.Code == code && p.Id != id))
+            {
+                ShowError(CodeRules.MsgCodeDuplicate);
+                return;
+            }
+
             e.FirstName = dlg.GetText(0)!.Trim();
             e.MiddleName = dlg.GetText(1);
             e.LastName = dlg.GetText(2)!.Trim();
             e.Title = dlg.GetText(3);
-            e.Code = dlg.GetText(4);
+            e.Code = code;
             e.Gender = dlg.GetChoice(5);
             e.FatherName = dlg.GetText(6);
             e.BirthDate = dlg.GetDate(7) is null ? "" : PersianDate.ToPersian(dlg.GetDate(7));
@@ -97,11 +116,13 @@ public partial class PeopleListPage : UserControl
             await db.SaveChangesAsync();
             // Keep the CustomersProviders mirror in sync for invoices.
             await CustomersProviderService.SyncPersonAsync(db, e);
+            // حساب تفصیلی خودکار با همان کد، زیر حساب معین انتخاب‌شده
+            await DetailAccountService.SyncPersonAsync(db, e, dlg.GetChoice(13));
             Load();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "خطا در ذخیره", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError(ex.Message);
         }
     }
 
@@ -123,9 +144,10 @@ public partial class PeopleListPage : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "خطا در حذف", MessageBoxButton.OK, MessageBoxImage.Error);
+            ShowError(ex.Message);
         }
     }
 
     private static void Info(string m) => MessageBox.Show(m, "اطلاع", MessageBoxButton.OK, MessageBoxImage.Information);
+    private static void ShowError(string m) => MessageBox.Show(m, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning);
 }

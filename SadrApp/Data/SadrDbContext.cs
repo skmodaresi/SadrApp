@@ -185,6 +185,23 @@ public class SadrDbContext : DbContext
           .WithMany().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.NoAction);
         mb.Entity<InvoiceMoneyTransaction>().HasOne(l => l.AccountTransaction)
           .WithMany().HasForeignKey(l => l.AccountTransactionId).OnDelete(DeleteBehavior.NoAction);
+
+        // Unique codes as a hard database-level safety net (the editors already validate).
+        // Filtered: soft-deleted rows and empty/NULL codes never participate, so history is
+        // free and rows without a code (the "—" case in the editors) are never blocked.
+        string codeFilter = "[Deleted] = 0 AND [Code] IS NOT NULL AND [Code] <> ''";
+        mb.Entity<Person>().HasIndex(p => p.Code).IsUnique().HasDatabaseName("IX_People_Code").HasFilter(codeFilter);
+        mb.Entity<Company>().HasIndex(c => c.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<Product>().HasIndex(p => p.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<Brand>().HasIndex(b => b.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<Bank>().HasIndex(b => b.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<Currency>().HasIndex(c => c.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<WareHouse>().HasIndex(w => w.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<CustomersProvider>().HasIndex(c => c.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<AccountGroup>().HasIndex(g => g.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<GeneralAccount>().HasIndex(g => g.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<SubSidiaryAccount>().HasIndex(s => s.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<DetailAccount>().HasIndex(d => d.Code).IsUnique().HasFilter(codeFilter);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

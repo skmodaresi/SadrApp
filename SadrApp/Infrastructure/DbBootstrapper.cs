@@ -211,6 +211,80 @@ public static class DbBootstrapper
                 idx.ExecuteNonQuery();
             }
 
+            // Unique code indexes (hard safety net against duplicate codes). Filtered so
+            // soft-deleted rows and empty/NULL codes never participate. Fresh installs get
+            // them from the EF model directly; for existing databases this loop:
+            // - skips when a filtered unique index on Code already exists (any name),
+            // - upgrades a plain (non-filtered) unique on Code to the filtered version
+            //   (create new first, then drop the old one, so protection never lapses),
+            // - creates the filtered index when the table has none.
+            foreach (var (table, index) in new[]
+            {
+                ("People", "IX_People_Code"),
+                ("Companies", "IX_Companies_Code"),
+                ("Products", "IX_Products_Code"),
+                ("Brands", "IX_Brands_Code"),
+                ("Banks", "IX_Banks_Code"),
+                ("Currencies", "IX_Currencies_Code"),
+                ("WareHouses", "IX_WareHouses_Code"),
+                ("CustomersProviders", "IX_CustomersProviders_Code"),
+                ("AccountGroups", "IX_AccountGroups_Code"),
+                ("GeneralAccounts", "IX_GeneralAccounts_Code"),
+                ("SubSidiaryAccounts", "IX_SubSidiaryAccounts_Code"),
+                ("DetailAccounts", "IX_DetailAccounts_Code")
+            })
+            {
+                using var uq = con.CreateCommand();
+                uq.CommandText = """
+                    DECLARE @t sysname = @tname, @want sysname = @iname;
+                    DECLARE @haveFiltered nvarchar(128) = (SELECT TOP 1 i.name FROM sys.indexes i
+                        JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.key_ordinal = 1
+                        JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+                        WHERE i.object_id = OBJECT_ID(@t) AND i.is_unique = 1 AND i.has_filter = 1 AND c.name = N'Code');
+                    IF @haveFiltered IS NULL
+                    BEGIN
+                        DECLARE @havePlain nvarchar(128) = (SELECT TOP 1 i.name FROM sys.indexes i
+                            JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.key_ordinal = 1
+                            JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+                            WHERE i.object_id = OBJECT_ID(@t) AND i.is_unique = 1 AND i.has_filter = 0 AND c.name = N'Code');
+                        DECLARE @newName nvarchar(128) = CASE WHEN @havePlain IS NULL
+                            THEN @want ELSE N'UX_' + PARSENAME(@t,1) + N'_Code' END;
+                        DECLARE @ddl nvarchar(max) = N'CREATE UNIQUE INDEX ' + QUOTENAME(@newName)
+                            + N' ON dbo.' + QUOTENAME(PARSENAME(@t,1))
+                            + N' ([Code]) WHERE [Deleted] = 0 AND [Code] IS NOT NULL AND [Code] <> ''''';
+                        BEGIN TRY
+                            EXEC(@ddl);
+                            IF @havePlain IS NOT NULL
+                            BEGIN
+                                DECLARE @dropOld nvarchar(max) = N'DROP INDEX ' + QUOTENAME(@havePlain)
+                                    + N' ON dbo.' + QUOTENAME(PARSENAME(@t,1));
+                                EXEC(@dropOld);
+                            END
+                        END TRY BEGIN CATCH END CATCH;
+                    END
+                    ELSE
+                    BEGIN
+                        -- A filtered unique already exists (previous run or created by the
+                        -- model on fresh installs): drop any leftover plain unique on Code.
+                        DECLARE @leftover nvarchar(128) = (SELECT TOP 1 i.name FROM sys.indexes i
+                            JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.key_ordinal = 1
+                            JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+                            WHERE i.object_id = OBJECT_ID(@t) AND i.is_unique = 1 AND i.has_filter = 0
+                              AND c.name = N'Code' AND i.name <> @haveFiltered);
+                        IF @leftover IS NOT NULL
+                        BEGIN
+                            DECLARE @drop2 nvarchar(max) = N'DROP INDEX ' + QUOTENAME(@leftover)
+                                + N' ON dbo.' + QUOTENAME(PARSENAME(@t,1));
+                            BEGIN TRY EXEC(@drop2); END TRY BEGIN CATCH END CATCH;
+                        END
+                    END
+                    """;
+                uq.Parameters.AddWithValue("@tname", $"dbo.{table}");
+                uq.Parameters.AddWithValue("@iname", index);
+                uq.CommandTimeout = 0;
+                uq.ExecuteNonQuery();
+            }
+
             // AccountTransactions upgrade for databases created before this release.
             // The original script made BankAccountId/CashId NOT NULL and pointed
             // BankAccountId at the legacy empty Accounts table. A transaction lives in

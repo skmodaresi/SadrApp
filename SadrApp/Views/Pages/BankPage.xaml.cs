@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.EntityFrameworkCore;
 using SadrApp.Data;
+using SadrApp.Infrastructure;
 using SadrApp.ViewModels;
 using SadrApp.Views.Controls;
 
@@ -109,7 +110,9 @@ public partial class BankPage : UserControl
                 db.BankBranches.Add(e);
             }
             e.Name = dlg.GetText(0)!.Trim();
-            e.Code = dlg.GetText(1) ?? "";
+            e.Code = (dlg.GetText(1) ?? "").Trim();
+            if (e.Code.Length > 0 && await db.BankBranches.AnyAsync(x => !x.Deleted && x.Code == e.Code && x.Id != id))
+            { MessageBox.Show(CodeRules.MsgCodeDuplicate, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             e.BankId = dlg.GetChoice(2) ?? banks[0].Key;
             e.Tel = dlg.GetText(3);
             e.Address = dlg.GetText(4);
