@@ -39,6 +39,10 @@ public class SadrDbContext : DbContext
     public DbSet<InvoicePrintSetting> InvoicePrintSettings => Set<InvoicePrintSetting>();
     public DbSet<Cheque> Cheques => Set<Cheque>();
     public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
+    public DbSet<Cash> Cashes => Set<Cash>();
+    public DbSet<AccountTransaction> AccountTransactions => Set<AccountTransaction>();
+    public DbSet<TaskReportMoneyTransaction> TaskReportMoneyTransactions => Set<TaskReportMoneyTransaction>();
+    public DbSet<InvoiceMoneyTransaction> InvoiceMoneyTransactions => Set<InvoiceMoneyTransaction>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -153,6 +157,34 @@ public class SadrDbContext : DbContext
           .WithMany().HasForeignKey(t => t.ResponcePersonId).OnDelete(DeleteBehavior.NoAction);
         mb.Entity<TaskReport>().HasOne(r => r.Task)
           .WithMany(t => t.Reports).HasForeignKey(r => r.TaskId).OnDelete(DeleteBehavior.NoAction);
+
+        // Money movements: cash boxes, account transactions, invoice/report links
+        mb.Entity<Cash>().HasOne(c => c.OwnerPerson)
+          .WithMany().HasForeignKey(c => c.OwnerPersonId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<Cash>().HasOne(c => c.OwnerCompany)
+          .WithMany().HasForeignKey(c => c.OwnerCompanyId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<Cash>().HasOne(c => c.ResponcePerson)
+          .WithMany().HasForeignKey(c => c.ResponcePersonId).OnDelete(DeleteBehavior.NoAction);
+        // BankAccountId/CashId are optional on purpose: a transaction lives in either a
+        // bank account or a cash box, never both. WithPrincipal avoids a second cascade
+        // path via BankAccount -> BankTransactions (already principal-ended there).
+        mb.Entity<AccountTransaction>().HasOne(t => t.BankAccount)
+          .WithOne().HasForeignKey<AccountTransaction>(t => t.BankAccountId)
+          .IsRequired(false).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<AccountTransaction>().HasOne(t => t.Cash)
+          .WithMany().HasForeignKey(t => t.CashId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<AccountTransaction>().HasOne(t => t.Invoice)
+          .WithMany().HasForeignKey(t => t.InvoiceId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<AccountTransaction>().HasOne(t => t.Person)
+          .WithMany().HasForeignKey(t => t.PersonId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<TaskReportMoneyTransaction>().HasOne(l => l.TaskReport)
+          .WithMany().HasForeignKey(l => l.TaskReportId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<TaskReportMoneyTransaction>().HasOne(l => l.AccountTransaction)
+          .WithMany().HasForeignKey(l => l.AccountTransactionId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<InvoiceMoneyTransaction>().HasOne(l => l.Invoice)
+          .WithMany().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.NoAction);
+        mb.Entity<InvoiceMoneyTransaction>().HasOne(l => l.AccountTransaction)
+          .WithMany().HasForeignKey(l => l.AccountTransactionId).OnDelete(DeleteBehavior.NoAction);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

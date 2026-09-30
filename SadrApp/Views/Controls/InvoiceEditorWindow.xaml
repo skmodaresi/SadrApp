@@ -98,6 +98,8 @@
     <!-- buttons -->
     <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,12,0,0">
       <Button x:Name="BtnSave" Content="💾 ذخیره فاکتور" Style="{StaticResource PrimaryBtn}" MinWidth="130"/>
+      <Button x:Name="BtnMoney" Content="💰 تراکنش‌های مالی" Style="{StaticResource GhostBtn}" MinWidth="130" Margin="8,0,0,0"
+              Visibility="Hidden" ToolTip="دریافت/پرداخت‌های این فاکتور (چند تراکنش مجاز است)"/>
       <Button x:Name="BtnCancel" Content="انصراف" Style="{StaticResource GhostBtn}" MinWidth="100" Margin="8,0,0,0" IsCancel="True"/>
       <Button x:Name="BtnPrint" Content="🖨 چاپ / PDF" Style="{StaticResource GhostBtn}" MinWidth="120" Margin="24,0,0,0"
               Visibility="Hidden" ToolTip="چاپ یا ذخیره PDF فاکتور ذخیره‌شده"/>

@@ -84,6 +84,9 @@ public partial class App : Application
             return;
         }
 
+        // Per-user fonts: settings file is keyed by the logged-in username.
+        FontSettingsService.Apply(FontSettingsService.Load());
+
         new MainWindow().Show();
     }
 }

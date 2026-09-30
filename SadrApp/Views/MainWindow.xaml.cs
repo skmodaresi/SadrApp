@@ -42,6 +42,8 @@ public partial class MainWindow : Window
         MnuWarehouses.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Warehouses, "انبارها"), "انبارها");
         MnuCurrencies.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Currencies, "واحدهای پول"), "واحدهای پول");
         MnuRoles.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Roles, "نقش‌ها"), "نقش‌ها");
+        MnuCashes.Click += (_, _) => OpenTab(new CashesPage(), "صندوق‌ها");
+        MnuMoneyTransactions.Click += (_, _) => OpenTab(new AccountTransactionsPage(), "تراکنش‌های مالی");
 
         // Role-based visibility: invoices for sales people, warehouse transfers for
         // warehouse keepers. Admin (CanRegisterInvoices/CanManageWarehouse both true)
@@ -54,8 +56,15 @@ public partial class MainWindow : Window
         MnuConnection.Click += (_, _) => ShowConnectionSettings();
         MnuBackup.Click += (_, _) => new BackupWindow { Owner = this }.ShowDialog();
         MnuPrintSettings.Click += (_, _) => new SadrApp.Views.PrintSettingsWindow { Owner = this }.ShowDialog();
+        MnuFontSettings.Click += (_, _) => new FontSettingsWindow { Owner = this }.ShowDialog();
+        MnuDbUpgrade.Click += (_, _) => RunDbUpgrade();
         MnuExit.Click += (_, _) => Close();
-        Loaded += (_, _) => ShowConnectionSummary();
+        Loaded += (_, _) =>
+        {
+            ShowConnectionSummary();
+            // Apply the saved fonts to this window's menu bar (styles were already applied at startup).
+            FontSettingsService.ApplyToMenu(MainMenu);
+        };
     }
 
     /// <summary>Opens (or re-selects) the bank-accounts management tab.</summary>
@@ -106,6 +115,36 @@ public partial class MainWindow : Window
         close.Click += (_, _) => Tabs.Items.Remove(owner);
         panel.Children.Add(close);
         return panel;
+    }
+
+    /// <summary>
+    /// Runs the schema upgrade (same idempotent routine as startup) and reports the result.
+    /// Existing data is never touched: only missing tables/columns/indexes are added.
+    /// </summary>
+    private void RunDbUpgrade()
+    {
+        var answer = MessageBox.Show(this,
+            "ساختار پایگاه داده با نسخهٔ جدید برنامه هماهنگ می‌شود.\n" +
+            "هیچ داده‌ای حذف یا تغییر نمی‌کند؛ فقط جدول‌ها و ستون‌های جدید ساخته می‌شوند.\n\n" +
+            "توصیه: قبل از ادامه یک نسخهٔ پشتیبان بگیرید. ادامه می‌دهید؟",
+            "بروزرسانی پایگاه داده", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes) return;
+
+        try
+        {
+            DbBootstrapper.EnsureDatabase();
+            MessageBox.Show(this,
+                "ساختار پایگاه داده بروزرسانی شد.\n\n" +
+                $"پایگاه داده: {DbBootstrapper.DatabaseName}\n" +
+                "برای استفاده از امکانات جدید، صفحه‌ها را ببندید و دوباره باز کنید.",
+                "انجام شد", MessageBoxButton.OK, MessageBoxImage.Information);
+            StatusText.Text = "ساختار پایگاه داده بروزرسانی شد — " + DateTime.Now.ToString("yyyy/MM/dd HH:mm");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "بروزرسانی ناموفق بود:\n" + ex.Message,
+                "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ShowConnectionSettings()

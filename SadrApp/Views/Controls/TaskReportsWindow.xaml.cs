@@ -97,13 +97,31 @@ public partial class TaskReportsWindow : Window
                     .FirstOrDefaultAsync();
             }
 
-            var dlg = new FieldEditorWindow(id is null ? "گزارش جدید" : "ویرایش گزارش", new[]
+            // Money side: does this report already have a transaction, and which cash boxes exist?
+            var existingLink = e is null ? null : await db.TaskReportMoneyTransactions
+                .FirstOrDefaultAsync(l => !l.Deleted && l.TaskReportId == e.Id);
+            var existingTransactionCashId = existingLink is null ? 0 : await db.AccountTransactions
+                .Where(t => t.Id == existingLink.AccountTransactionId).Select(t => (int?)t.CashId)
+                .FirstOrDefaultAsync() ?? 0;
+            var cashChoices = await db.Cashes.Where(c => !c.Deleted)
+                .Select(c => new KeyValuePair<int, string>(c.Id, c.Name)).ToListAsync();
+
+            var fields = new List<FieldSpec>
             {
                 FieldSpec.Date_("تاریخ گزارش", e?.CreateDateTime ?? DateTime.Now, true),
                 FieldSpec.Choice_("گزارش‌دهنده", people, defaultReporter),
                 FieldSpec.Numeric_("هزینه این گزارش (ريال)", e?.Cost),
                 FieldSpec.Multi_("شرح گزارش", e?.Description, required: true),
-            }) { Owner = this };
+            };
+            if (cashChoices.Count > 0)
+            {
+                cashChoices.Insert(0, new KeyValuePair<int, string>(0, "— پرداخت از صندوق انجام نشود —"));
+                fields.Add(FieldSpec.Choice_("پرداخت هزینه از صندوق", cashChoices,
+                    existingLink is not null ? existingTransactionCashId : 0));
+            }
+
+            var dlg = new FieldEditorWindow(id is null ? "گزارش جدید" : "ویرایش گزارش", fields)
+                { Owner = this };
 
             if (dlg.ShowDialog() != true) return;
 
@@ -122,6 +140,48 @@ public partial class TaskReportsWindow : Window
             e.FreeTaskId = 0;
 
             await db.SaveChangesAsync();
+
+            // Money movement for this report: pay the cost out of a cash box (creates an
+            // AccountTransaction + TaskReportMoneyTransactions link) or undo an existing one.
+            if (cashChoices.Count > 0)
+            {
+                var chosenCash = dlg.GetChoice(4) ?? 0;
+                if (chosenCash > 0 && e.Cost > 0 && existingLink is null)
+                {
+                    var t = new AccountTransaction
+                    {
+                        Type = AccountTransactionTypeConsts.Payment,
+                        TransActionSystem = TransactionSystemConsts.Cash,
+                        CashId = chosenCash,
+                        Value = e.Cost,
+                        DateG = d,
+                        Date = PersianDate.ToPersian(d),
+                        PersonId = e.ReporterUserId,
+                        Description = "هزینه گزارش: " + (e.Description.Length > 60 ? e.Description[..60] + "…" : e.Description)
+                    };
+                    db.AccountTransactions.Add(t);
+                    await db.SaveChangesAsync();
+                    db.TaskReportMoneyTransactions.Add(new TaskReportMoneyTransaction
+                    {
+                        TaskReportId = e.Id,
+                        AccountTransactionId = t.Id,
+                        RecordUniqueId = Guid.NewGuid(),
+                        CreateDateTime = DateTime.Now
+                    });
+                    await db.SaveChangesAsync();
+                    await CashLedger.RecalculateAsync(db, t.BankAccountId, t.CashId);
+                }
+                else if (chosenCash == 0 && existingLink is not null)
+                {
+                    // user turned the payment off — undo the linked transaction
+                    var t = await db.AccountTransactions.FirstAsync(x => x.Id == existingLink.AccountTransactionId);
+                    existingLink.Deleted = true;
+                    t.Deleted = true;
+                    await db.SaveChangesAsync();
+                    await CashLedger.RecalculateAsync(db, t.BankAccountId, t.CashId);
+                }
+            }
+
             Load();
         }
         catch (Exception ex)

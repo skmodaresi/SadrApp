@@ -115,6 +115,7 @@ public partial class InvoiceEditorWindow : Window
         _invoiceId = invoiceId;
         _initialType = invoiceType;
         BtnPrint.Visibility = invoiceId is int ? Visibility.Visible : Visibility.Hidden;
+        BtnMoney.Visibility = invoiceId is int ? Visibility.Visible : Visibility.Hidden;
 
         CmbType.ItemsSource = new[]
         {
@@ -145,6 +146,11 @@ public partial class InvoiceEditorWindow : Window
         BtnRemoveRow.Click += (_, _) => RemoveRow();
         BtnSave.Click += async (_, _) => await SaveAsync();
         BtnPrint.Click += async (_, _) => await PrintSavedInvoiceAsync();
+        BtnMoney.Click += (_, _) =>
+        {
+            if (_invoiceId is int id)
+                new InvoiceMoneyWindow(id, TxtNumber.Text).ShowDialog();
+        };
 
         Loaded += async (_, _) =>
         {
@@ -594,6 +600,17 @@ public partial class InvoiceEditorWindow : Window
                 await WarehouseStock.SyncInvoiceTransfersAsync(db, inv, UserSession.CurrentUserId);
 
             SavedInvoiceId = inv.Id;
+
+            // Offer to register the money movement right after saving (several
+            // transactions per invoice are allowed via the money window).
+            if (inv.InvoiceType != InvoiceTypeConsts.PreInvoice &&
+                MessageBox.Show("برای این فاکتور تراکنش مالی (دریافت/پرداخت) ثبت شود؟",
+                    "ثبت وجه", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                Hide();
+                new InvoiceMoneyWindow(inv.Id, inv.InvoiceNumber).ShowDialog();
+            }
+
             DialogResult = true;
             Close();
         }

@@ -17,9 +17,7 @@
         <TextBlock x:Name="VersionText" DockPanel.Dock="Left" Foreground="#A9BFEA" FontSize="11"
                    VerticalAlignment="Center" HorizontalAlignment="Left" Text="نسخه ۰.۱ — فاز ۱"/>
       </DockPanel>
-    </Border>
-
-    <Menu DockPanel.Dock="Top" Background="White" FontSize="13" Padding="6,4">
+    </Border>      <Menu DockPanel.Dock="Top" Background="White" FontSize="13" Padding="6,4" x:Name="MainMenu">
       <MenuItem Header="🧾 فاکتورها">
         <MenuItem Header="📄 پیش‌فاکتورها" x:Name="MnuPreInvoices"/>
         <MenuItem Header="🧾 فاکتورهای فروش" x:Name="MnuSellInvoices"/>
@@ -32,6 +30,8 @@
       </MenuItem>
       <MenuItem Header="📊 حسابداری">
         <MenuItem Header="🧩 گروه‌های حساب" x:Name="MnuAccountGroups"/>
+        <MenuItem Header="💰 صندوق‌ها" x:Name="MnuCashes"/>
+        <MenuItem Header="💵 تراکنش‌های مالی" x:Name="MnuMoneyTransactions"/>
         <MenuItem Header="📚 حساب‌های کل" x:Name="MnuGeneralAccounts"/>
         <MenuItem Header="📗 حساب‌های معین" x:Name="MnuSubSidiaryAccounts"/>
         <MenuItem Header="📄 حساب‌های تفصیلی" x:Name="MnuDetailAccounts"/>
@@ -67,7 +67,9 @@
         <MenuItem Header="🔌 تنظیمات اتصال به پایگاه داده" x:Name="MnuConnection"/>
         <MenuItem Header="💾 پشتیبان‌گیری و بازیابی" x:Name="MnuBackup"/>
         <MenuItem Header="🖨 تنظیمات چاپ فاکتور" x:Name="MnuPrintSettings"/>
+        <MenuItem Header="🔤 تنظیمات فونت" x:Name="MnuFontSettings"/>
         <Separator/>
+        <MenuItem Header="⬆️ بروزرسانی ساختار پایگاه داده" x:Name="MnuDbUpgrade"/>
         <MenuItem Header="↩️ خروج" x:Name="MnuExit"/>
       </MenuItem>
     </Menu>
