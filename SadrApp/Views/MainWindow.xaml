@@ -32,6 +32,7 @@
         <MenuItem Header="🧩 گروه‌های حساب" x:Name="MnuAccountGroups"/>
         <MenuItem Header="💰 صندوق‌ها" x:Name="MnuCashes"/>
         <MenuItem Header="💵 تراکنش‌های مالی" x:Name="MnuMoneyTransactions"/>
+        <MenuItem Header="📈 موجودی صندوق‌ها و بانک" x:Name="MnuBalancesDashboard"/>
         <MenuItem Header="📚 حساب‌های کل" x:Name="MnuGeneralAccounts"/>
         <MenuItem Header="📗 حساب‌های معین" x:Name="MnuSubSidiaryAccounts"/>
         <MenuItem Header="📄 حساب‌های تفصیلی" x:Name="MnuDetailAccounts"/>

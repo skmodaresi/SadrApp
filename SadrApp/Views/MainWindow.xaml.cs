@@ -44,6 +44,7 @@ public partial class MainWindow : Window
         MnuRoles.Click += (_, _) => OpenTab(new SimpleListPage(SimpleListPage.Kind.Roles, "نقش‌ها"), "نقش‌ها");
         MnuCashes.Click += (_, _) => OpenTab(new CashesPage(), "صندوق‌ها");
         MnuMoneyTransactions.Click += (_, _) => OpenTab(new AccountTransactionsPage(), "تراکنش‌های مالی");
+        MnuBalancesDashboard.Click += (_, _) => OpenTab(new BalancesDashboardPage(), "موجودی صندوق‌ها و بانک");
 
         // Role-based visibility: invoices for sales people, warehouse transfers for
         // warehouse keepers. Admin (CanRegisterInvoices/CanManageWarehouse both true)
