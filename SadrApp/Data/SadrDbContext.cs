@@ -202,6 +202,7 @@ public class SadrDbContext : DbContext
         mb.Entity<GeneralAccount>().HasIndex(g => g.Code).IsUnique().HasFilter(codeFilter);
         mb.Entity<SubSidiaryAccount>().HasIndex(s => s.Code).IsUnique().HasFilter(codeFilter);
         mb.Entity<DetailAccount>().HasIndex(d => d.Code).IsUnique().HasFilter(codeFilter);
+        mb.Entity<Cash>().HasIndex(c => c.Code).IsUnique().HasFilter(codeFilter);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

@@ -40,7 +40,7 @@ public partial class CashesPage : UserControl
             var rows = await db.Cashes.Where(c => !c.Deleted)
                 .Select(c => new
                 {
-                    c.Id, c.Name, c.StartBalance, c.CurrentBalance, c.Status,
+                    c.Id, c.Name, c.Code, c.StartBalance, c.CurrentBalance, c.Status,
                     c.OwnerPersonId, c.OwnerCompanyId, c.ResponcePersonId, c.Description
                 })
                 .ToListAsync();
@@ -49,9 +49,10 @@ public partial class CashesPage : UserControl
             {
                 Id = c.Id,
                 Title = c.Name,
-                Code = c.Status == 1 ? "فعال" : "غیرفعال",
+                Code = c.Code ?? "",
                 Extra = "موجودی: " + c.CurrentBalance.ToString("N0"),
                 Description = string.Join(" | ",
+                    c.Status == 1 ? "فعال" : "غیرفعال",
                     c.OwnerPersonId is int op && people.TryGetValue(op, out var on) ? "مالک: " + on : "",
                     c.OwnerCompanyId is int oc && companies.TryGetValue(oc, out var cn) ? "شرکت: " + cn : "",
                     people.TryGetValue(c.ResponcePersonId, out var rn) ? "مسئول: " + rn : "",
@@ -75,7 +76,7 @@ public partial class CashesPage : UserControl
         {
             await using var db = SadrDb.New();
             var cash = await db.Cashes.Where(c => c.Id == cashId)
-                .Select(c => new { c.Name, c.CurrentBalance }).SingleOrDefaultAsync();
+                .Select(c => new { c.Name, c.Code, c.CurrentBalance }).SingleOrDefaultAsync();
             if (cash is null) { StatementCard.Visibility = Visibility.Collapsed; return; }
 
             var txs = await db.AccountTransactions
@@ -93,7 +94,9 @@ public partial class CashesPage : UserControl
             var title = new TextBlock
             {
                 Style = (Style)FindResource("H2"),
-                Text = $"صورت‌حساب «{cash.Name}» — {txs.Count} تراکنش آخر"
+                Text = $"صورت‌حساب «{cash.Name}»"
+                       + (string.IsNullOrWhiteSpace(cash.Code) ? "" : $" ({cash.Code})")
+                       + $" — {txs.Count} تراکنش آخر"
             };
             Grid.SetColumn(title, 0);
             head.Children.Add(title);
@@ -213,6 +216,7 @@ public partial class CashesPage : UserControl
             var dlg = new FieldEditorWindow(id is null ? "صندوق جدید" : "ویرایش صندوق", new[]
             {
                 FieldSpec.Text_("نام صندوق", e?.Name, true),
+                FieldSpec.Text_("کد صندوق", e?.Code),
                 FieldSpec.Choice_("مسئول صندوق", personChoices, e?.ResponcePersonId ?? personChoices[0].Key),
                 FieldSpec.Choice_("مالک (شخص)", personChoices, e?.OwnerPersonId ?? 0),
                 FieldSpec.Choice_("مالک (شرکت)", companyChoices, e?.OwnerCompanyId ?? 0),
@@ -230,16 +234,23 @@ public partial class CashesPage : UserControl
                 db.Cashes.Add(e);
             }
             e.Name = dlg.GetText(0)!.Trim();
-            e.ResponcePersonId = dlg.GetChoice(1) ?? personChoices[0].Key;
-            e.OwnerPersonId = dlg.GetChoice(2) is > 0 ? dlg.GetChoice(2) : null;
-            e.OwnerCompanyId = dlg.GetChoice(3) is > 0 ? dlg.GetChoice(3) : null;
-            e.Status = dlg.GetChoice(4) ?? 1;
-            e.StartBalance = dlg.GetNumber(5) ?? 0;
+            var code = (dlg.GetText(1) ?? "").Trim();
+            if (code.Length > 0 && await db.Cashes.AnyAsync(x => !x.Deleted && x.Code == code && x.Id != id))
+            {
+                MessageBox.Show(CodeRules.MsgCodeDuplicate, "ذخیره ممکن نیست", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            e.Code = code.Length > 0 ? code : null;
+            e.ResponcePersonId = dlg.GetChoice(2) ?? personChoices[0].Key;
+            e.OwnerPersonId = dlg.GetChoice(3) is > 0 ? dlg.GetChoice(3) : null;
+            e.OwnerCompanyId = dlg.GetChoice(4) is > 0 ? dlg.GetChoice(4) : null;
+            e.Status = dlg.GetChoice(5) ?? 1;
+            e.StartBalance = dlg.GetNumber(6) ?? 0;
             if (id is null) e.CurrentBalance = e.StartBalance; // edits never reset the live balance
             e.SignPeople = JsonSerializer.Serialize(
-                (dlg.GetText(6) ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                (dlg.GetText(7) ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Where(s => s.Length > 0).ToList());
-            e.Description = dlg.GetText(7);
+            e.Description = dlg.GetText(8);
             e.UpdateDateTime = now;
             e.UpdateUserId = UserSession.CurrentUserId;
             await db.SaveChangesAsync();

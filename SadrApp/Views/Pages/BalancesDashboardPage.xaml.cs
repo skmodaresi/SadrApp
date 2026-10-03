@@ -39,7 +39,7 @@ public partial class BalancesDashboardPage : UserControl
             await using var db = SadrDb.New();
 
             var cashes = await db.Cashes.Where(c => !c.Deleted)
-                .Select(c => new { c.Name, c.StartBalance, c.CurrentBalance, Responsible = c.ResponcePersonId })
+                .Select(c => new { c.Name, c.Code, c.StartBalance, c.CurrentBalance, Responsible = c.ResponcePersonId })
                 .ToListAsync();
             var accounts = await db.BankAccounts.Where(a => !a.Deleted)
                 .Select(a => new { a.Name, a.StartBalance, a.CurrentBalance, a.BankBranchId })
@@ -55,7 +55,7 @@ public partial class BalancesDashboardPage : UserControl
             rows.AddRange(cashes.Select(c => new BalanceRow
             {
                 KindLabel = "💰 صندوق",
-                Name = c.Name,
+                Name = string.IsNullOrWhiteSpace(c.Code) ? c.Name : $"{c.Name} ({c.Code})",
                 Detail = people.TryGetValue(c.Responsible, out var p) ? "مسئول: " + p : "",
                 StartBalance = c.StartBalance,
                 CurrentBalance = c.CurrentBalance

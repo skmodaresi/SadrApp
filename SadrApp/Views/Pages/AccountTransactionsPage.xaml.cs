@@ -68,7 +68,9 @@ public partial class AccountTransactionsPage : UserControl
             var bankNames = await db.BankAccounts.Where(a => !a.Deleted)
                 .Select(a => new { a.Id, a.Name }).ToDictionaryAsync(a => a.Id, a => a.Name);
             var cashNames = await db.Cashes.Where(c => !c.Deleted)
-                .Select(c => new { c.Id, c.Name }).ToDictionaryAsync(c => c.Id, c => c.Name);
+                .Select(c => new { c.Id, c.Name, c.Code })
+                .ToDictionaryAsync(c => c.Id,
+                    c => string.IsNullOrWhiteSpace(c.Code) ? c.Name : $"{c.Name} ({c.Code})");
             var invoiceNumbers = await db.Invoices
                 .Select(i => new { i.Id, i.InvoiceNumber }).ToDictionaryAsync(i => i.Id, i => i.InvoiceNumber);
             var personNames = await db.People.Where(p => !p.Deleted)
@@ -121,8 +123,10 @@ public partial class AccountTransactionsPage : UserControl
     {
         var banks = await db.BankAccounts.Where(a => !a.Deleted)
             .Select(a => new KeyValuePair<int, string>(a.Id, a.Name)).ToListAsync();
-        var cashes = await db.Cashes.Where(c => !c.Deleted)
-            .Select(c => new KeyValuePair<int, string>(c.Id, c.Name)).ToListAsync();
+        var cashRows = await db.Cashes.Where(c => !c.Deleted)
+            .Select(c => new { c.Id, c.Name, c.Code }).ToListAsync();
+        var cashes = cashRows.Select(c => new KeyValuePair<int, string>(c.Id,
+            string.IsNullOrWhiteSpace(c.Code) ? c.Name : $"{c.Name} ({c.Code})")).ToList();
         if (banks.Count == 0 && cashes.Count == 0)
         {
             MessageBox.Show("ابتدا یک حساب بانکی یا صندوق تعریف کنید.", "اطلاع", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -209,8 +213,10 @@ public partial class AccountTransactionsPage : UserControl
 
             var banks = await db.BankAccounts.Where(a => !a.Deleted)
                 .Select(a => new KeyValuePair<int, string>(a.Id, a.Name)).ToListAsync();
-            var cashes = await db.Cashes.Where(c => !c.Deleted)
-                .Select(c => new KeyValuePair<int, string>(c.Id, c.Name)).ToListAsync();
+            var cashRows = await db.Cashes.Where(c => !c.Deleted)
+                .Select(c => new { c.Id, c.Name, c.Code }).ToListAsync();
+            var cashes = cashRows.Select(c => new KeyValuePair<int, string>(c.Id,
+                string.IsNullOrWhiteSpace(c.Code) ? c.Name : $"{c.Name} ({c.Code})")).ToList();
             var people = await db.People.Where(p => !p.Deleted)
                 .Select(p => new KeyValuePair<int, string>(p.Id, p.FirstName + " " + p.LastName)).ToListAsync();
             people.Insert(0, new KeyValuePair<int, string>(0, "— انتخاب نشده —"));

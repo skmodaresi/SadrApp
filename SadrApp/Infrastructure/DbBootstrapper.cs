@@ -108,6 +108,9 @@ public static class DbBootstrapper
                 fkName: "FK_BankTransactions_Cheques_ChequeId",
                 fkDefinition: "CONSTRAINT [FK_BankTransactions_Cheques_ChequeId] FOREIGN KEY ([ChequeId]) REFERENCES [Cheques] ([Id])");
 
+            // Cash boxes: optional box code (کد صندوق), added after the first release.
+            SchemaHelpers.AddColumnIfMissing(con, "Cashes", "Code", "nvarchar(40) NULL");
+
             // Cash boxes and money transactions. The live database already has these
             // tables; this only creates them on fresh installs.
             SchemaHelpers.AddTableIfMissing(con, "Cashes", """
@@ -231,7 +234,8 @@ public static class DbBootstrapper
                 ("AccountGroups", "IX_AccountGroups_Code"),
                 ("GeneralAccounts", "IX_GeneralAccounts_Code"),
                 ("SubSidiaryAccounts", "IX_SubSidiaryAccounts_Code"),
-                ("DetailAccounts", "IX_DetailAccounts_Code")
+                ("DetailAccounts", "IX_DetailAccounts_Code"),
+                ("Cashes", "IX_Cashes_Code")
             })
             {
                 using var uq = con.CreateCommand();

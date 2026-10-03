@@ -36,6 +36,8 @@ public class Cash
 {
     [Key] public int Id { get; set; }
     public string Name { get; set; } = "";
+    /// <summary>Optional box code (کد صندوق); unique among live cash boxes when set.</summary>
+    public string? Code { get; set; }
     public string? Description { get; set; }
     public decimal StartBalance { get; set; }
     /// <summary>Live balance: StartBalance + received − paid (kept consistent like the bank ledger).</summary>
