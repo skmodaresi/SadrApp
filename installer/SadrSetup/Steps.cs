@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Text;
+using System.Xml.Linq;
 using Microsoft.Data.SqlClient;
 using Microsoft.Win32;
 
@@ -56,64 +58,295 @@ internal static class Steps
         SetupLog.Info("SqlLocalDB MSI installed");
     }
 
-    public static void CopyPayload(string sourceDir, string targetDir, Action<string> report)
+    // ------------------------------------------------------------------
+    // Existing-install detection (update mode)
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Looks for a previously installed SadrApp: the registry marker written by this
+    /// wizard, the Start-Menu shortcut target, and the well-known Program Files folders.
+    /// Returns the install directory or null when nothing is installed yet.
+    /// </summary>
+    public static string? FindExistingInstall()
     {
-        report("در حال کپی فایل‌های برنامه...");
-        Directory.CreateDirectory(targetDir);
-        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        var candidates = new List<string>();
+
+        try
         {
-            var rel = GetRelativePath(sourceDir, file);
-            var dest = Path.Combine(targetDir, rel);
-            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-            File.Copy(file, dest, overwrite: true);
+            using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\SadrApp");
+            var reg = key?.GetValue("InstallLocation") as string;
+            if (reg != null && reg.Length > 0) candidates.Add(reg);
+        }
+        catch (Exception ex)
+        {
+            SetupLog.Error("FindExistingInstall registry: " + ex.Message);
+        }
+
+        // Older installs (before the registry marker existed) created a Start-Menu
+        // shortcut; its target tells us where the app actually lives.
+        try
+        {
+            var lnk = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu),
+                "Programs", "سامانه صدر", "سامانه صدر.lnk");
+            if (File.Exists(lnk))
+            {
+                var type = Type.GetTypeFromCLSID(new Guid("72C24DD5-D70A-438B-8A42-98424B88AFB8"));
+                dynamic shell = Activator.CreateInstance(type)!;
+                var target = (string)shell.CreateShortcut(lnk).TargetPath;
+                var dir = Path.GetDirectoryName(target);
+                if (dir != null && dir.Length > 0) candidates.Add(dir);
+            }
+        }
+        catch (Exception ex)
+        {
+            SetupLog.Error("FindExistingInstall shortcut: " + ex.Message);
+        }
+
+        candidates.Add(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SadrApp"));
+        candidates.Add(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "SadrApp"));
+
+        foreach (var c in candidates)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(c) &&
+                    File.Exists(Path.Combine(c, "SadrApp.exe")))
+                    return Path.GetFullPath(c);
+            }
+            catch
+            {
+                // ignore malformed candidate paths
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Remembers the install location so the next setup run can offer an update.</summary>
+    public static void RegisterInstallLocation(string installDir)
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\SadrApp");
+            key?.SetValue("InstallLocation", installDir);
+            SetupLog.Info("InstallLocation registered: " + installDir);
+        }
+        catch (Exception ex)
+        {
+            SetupLog.Error("RegisterInstallLocation: " + ex.Message); // non-fatal
         }
     }
 
-    public static void WriteConnectionDat(string installDir, string server, string database)
+    /// <summary>
+    /// Copies the payload, skipping files that are already identical (same size and
+    /// last-write time) so an update only transfers what changed. Connection.dat is
+    /// never touched here — it belongs to the user's existing configuration.
+    /// </summary>
+    public static void CopyPayload(string sourceDir, string targetDir, Action<string> report)
     {
-        var cs =
-            $"Data Source={server};Initial Catalog={database};Integrated Security=True;" +
-            "Persist Security Info=True;Pooling=False;MultipleActiveResultSets=False;" +
-            "Encrypt=True;TrustServerCertificate=True;Command Timeout=0";
-        var doc = new System.Xml.Linq.XDocument(
-            new System.Xml.Linq.XComment(
-                "تنظیمات اتصال به پایگاه داده SQL Server - این فایل را روی سیستم مشتری ویرایش کنید"),
-            new System.Xml.Linq.XElement("DatabaseConnection",
-                new System.Xml.Linq.XElement("ConnectionString", cs)));
-        File.WriteAllText(Path.Combine(installDir, "Connection.dat"), doc.ToString());
-        SetupLog.Info("Connection.dat written: " + cs);
+        report("در حال کپی فایل‌های برنامه (فقط فایل‌های تغییرکرده)...");
+        Directory.CreateDirectory(targetDir);
+        int copied = 0, skipped = 0;
+        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var rel = GetRelativePath(sourceDir, file);
+            if (rel.Equals("Connection.dat", StringComparison.OrdinalIgnoreCase))
+            {
+                skipped++; // user configuration — never overwrite from the payload
+                continue;
+            }
+            var dest = Path.Combine(targetDir, rel);
+            var destDir = Path.GetDirectoryName(dest);
+            if (!string.IsNullOrEmpty(destDir)) Directory.CreateDirectory(destDir);
+
+            var src = new FileInfo(file);
+            var dst = new FileInfo(dest);
+            if (dst.Exists && dst.Length == src.Length &&
+                dst.LastWriteTimeUtc == src.LastWriteTimeUtc)
+            {
+                skipped++;
+                continue;
+            }
+            File.Copy(file, dest, overwrite: true);
+            copied++;
+        }
+        report($"کپی فایل‌ها: {copied} فایل به‌روزرسانی شد، {skipped} فایل بدون تغییر باقی ماند.");
     }
 
-    /// <summary>Ensures the LocalDB default instance exists/started and the app database exists.</summary>
-    public static void CreateDatabase(string database, Action<string> report)
+    // ------------------------------------------------------------------
+    // SQL Server discovery / connection
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Enumerates locally installed SQL Server engines from the registry
+    /// (both 64- and 32-bit views) and returns connection names like
+    /// "MACHINENAME" (default instance) or "MACHINENAME\SQLEXPRESS".
+    /// </summary>
+    public static List<string> DiscoverSqlServerInstances()
     {
-        report("در حال راه‌اندازی نمونه LocalDB...");
-        var exe = FindSqlLocalDbExe();
+        var found = new List<string>();
+        var machine = Environment.MachineName;
+        foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+        {
+            try
+            {
+                using var root = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+                using var key = root.OpenSubKey(@"SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL");
+                if (key is null) continue;
+                foreach (var instance in key.GetValueNames())
+                {
+                    if (string.IsNullOrEmpty(key.GetValue(instance) as string)) continue;
+                    var conn = instance.Equals("MSSQLSERVER", StringComparison.OrdinalIgnoreCase)
+                        ? machine
+                        : machine + "\\" + instance;
+                    if (!found.Contains(conn, StringComparer.OrdinalIgnoreCase))
+                        found.Add(conn);
+                }
+            }
+            catch (Exception ex)
+            {
+                SetupLog.Error("DiscoverSqlServerInstances: " + ex.Message);
+            }
+        }
+        found.Sort(StringComparer.OrdinalIgnoreCase);
+        SetupLog.Info("SQL Server instances found: " +
+                      (found.Count == 0 ? "(none)" : string.Join(", ", found)));
+        return found;
+    }
 
-        // create/start are tolerant: they may already exist / be running.
-        RunTolerant(exe, $"c {LocalDbInstance}", 60);
-        RunTolerant(exe, $"s {LocalDbInstance}", 60);
+    /// <summary>Builds the connection string in exactly the format the app itself uses.</summary>
+    public static string BuildConnectionString(
+        string server, string database, bool windowsAuth, string user, string password)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Data Source=").Append(server).Append(';');
+        sb.Append("Initial Catalog=").Append(database).Append(';');
+        if (windowsAuth)
+            sb.Append("Integrated Security=True;");
+        else
+            sb.Append("Persist Security Info=True;User ID=").Append(user)
+              .Append(";Password=").Append(password).Append(';');
+        sb.Append("Pooling=False;MultipleActiveResultSets=False;Encrypt=True;")
+          .Append("TrustServerCertificate=True;Command Timeout=0;Application Name=SadrApp");
+        return sb.ToString();
+    }
 
-        report("در حال ساخت پایگاه داده «" + database + "»...");
-        var master = $@"Data Source=(localdb)\{LocalDbInstance};Initial Catalog=master;" +
-                     "Integrated Security=True;Encrypt=True;TrustServerCertificate=True;Connect Timeout=30";
-        using (var con = new SqlConnection(master))
+    public static bool TryConnect(string connectionString, out string error)
+    {
+        try
+        {
+            using var con = new SqlConnection(connectionString);
+            con.Open();
+            error = "";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            SetupLog.Error("TryConnect: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>Lists user databases (system databases excluded) on an already-open server.</summary>
+    public static List<string> ListUserDatabases(string masterConnectionString)
+    {
+        var list = new List<string>();
+        using var con = new SqlConnection(masterConnectionString);
+        con.Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText =
+            "SELECT name FROM sys.databases WHERE database_id > 4 AND state = 0 ORDER BY name";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read()) list.Add(reader.GetString(0));
+        return list;
+    }
+
+    /// <summary>Creates the database when it does not exist yet, then verifies it opens.</summary>
+    public static void EnsureDatabase(
+        string server, string database, bool windowsAuth, string user, string password,
+        Action<string> report)
+    {
+        report("در حال بررسی/ساخت پایگاه داده «" + database + "»...");
+        var masterCs = BuildConnectionString(server, "master", windowsAuth, user, password);
+        using (var con = new SqlConnection(masterCs))
         {
             con.Open();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = $"IF DB_ID(N'{database.Replace("'", "''")}') IS NULL CREATE DATABASE [{database.Replace("]", "]]")}]";
+            cmd.CommandText =
+                $"IF DB_ID(N'{database.Replace("'", "''")}') IS NULL CREATE DATABASE [{database.Replace("]", "]]")}]";
             cmd.CommandTimeout = 0;
             cmd.ExecuteNonQuery();
         }
 
         // Final connectivity check exactly as the app will connect.
-        var appCs = $@"Data Source=(localdb)\{LocalDbInstance};Initial Catalog={database};" +
-                    "Integrated Security=True;Encrypt=True;TrustServerCertificate=True;Connect Timeout=30";
+        var appCs = BuildConnectionString(server, database, windowsAuth, user, password);
         using (var con = new SqlConnection(appCs))
         {
             con.Open();
         }
-        SetupLog.Info($"LocalDB + database '{database}' verified");
+        SetupLog.Info($"database '{database}' on '{server}' verified");
+    }
+
+    /// <summary>Reads server/database/auth from an existing Connection.dat (for update-mode logging).</summary>
+    public static string[] ReadConnectionInfo(string file)
+    {
+        try
+        {
+            var doc = XDocument.Load(file);
+            var cs = doc.Root?.Element("ConnectionString")?.Value ?? "";
+            var server = GetPart(cs, "Data Source");
+            var db = GetPart(cs, "Initial Catalog");
+            var integrated = GetPart(cs, "Integrated Security");
+            var auth = integrated.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                       integrated.Equals("SSPI", StringComparison.OrdinalIgnoreCase)
+                ? "ویندوز"
+                : "SQL Server";
+            return new[] { server, db, auth };
+        }
+        catch (Exception ex)
+        {
+            SetupLog.Error("ReadConnectionInfo: " + ex.Message);
+            return new[] { "?", "?", "?" };
+        }
+    }
+
+    private static string GetPart(string cs, string key)
+    {
+        foreach (var part in cs.Split(';'))
+        {
+            var idx = part.IndexOf('=');
+            if (idx > 0 && part.Substring(0, idx).Trim()
+                    .Equals(key, StringComparison.OrdinalIgnoreCase))
+                return part.Substring(idx + 1).Trim();
+        }
+        return "";
+    }
+
+    // ------------------------------------------------------------------
+    // Connection.dat / database / prerequisites
+    // ------------------------------------------------------------------
+
+    public static void WriteConnectionDat(string installDir, string connectionString)
+    {
+        var doc = new XDocument(
+            new XComment(
+                "تنظیمات اتصال به پایگاه داده SQL Server - این فایل را روی سیستم مشتری ویرایش کنید"),
+            new XElement("DatabaseConnection",
+                new XElement("ConnectionString", connectionString)));
+        File.WriteAllText(Path.Combine(installDir, "Connection.dat"), doc.ToString());
+        SetupLog.Info("Connection.dat written");
+    }
+
+    /// <summary>Ensures the LocalDB default instance exists and is running.</summary>
+    public static void EnsureLocalDbRunning(Action<string> report)
+    {
+        report("در حال راه‌اندازی نمونه LocalDB...");
+        var exe = FindSqlLocalDbExe();
+        RunTolerant(exe, $"c {LocalDbInstance}", 60);
+        RunTolerant(exe, $"s {LocalDbInstance}", 60);
     }
 
     public static void CreateShortcut(string exePath)
